@@ -43,10 +43,14 @@ class Master():
         accept_thread.start()
         
         # main loop
+        ports = []
         while not self.is_shutdown:
-            for id_ in self.servers.copy():
-                if self.servers[id_][1] != self.cameras.keys():
-                    self.servers[id_] = (self.servers[id_][0], self.cameras.keys())
+            for port, camera in self.cameras.items():
+                if port not in ports:
+                    for id_, server in self.servers.items():
+                        server[1].append(port)
+                    ports.append(port)
+
 
        #TODO REMOVE OFFLINE CAMS 
 
