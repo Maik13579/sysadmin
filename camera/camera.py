@@ -14,6 +14,12 @@ class Camera():
 
     def __init__(self):
 
+        # Video Capture
+        self.vcap = cv2.VideoCapture(0)
+        if not self.vcap.isOpened():
+            print('no camera found!')
+            exit(1)
+
         # Connect to Master
         master_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         connected = False
@@ -50,11 +56,6 @@ class Camera():
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 10000000)
 
-        # Video Capture
-        self.vcap = cv2.VideoCapture(0)
-        if not self.vcap.isOpened():
-            print('no camera found!')
-            exit(1)
 
         print("streaming on port:",self.port)
 
