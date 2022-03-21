@@ -23,3 +23,9 @@ available services:
 - ***camera3***
 - ***server1***
 - ***server2***
+
+### Example
+
+```
+docker-compose up master camera0 server1
+```
