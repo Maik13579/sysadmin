@@ -11,5 +11,15 @@
 
 clone repo and run:
 ```
-docker-compose up
+docker-compose up [services]
 ```
+
+available services:
+
+- ***master***
+- ***camera0***
+- ***camera1***
+- ***camera2***
+- ***camera3***
+- ***server1***
+- ***server2***

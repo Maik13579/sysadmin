@@ -19,7 +19,8 @@ services:
                         - /tmp/.X11-unix:/tmp/.X11-unix
                         - $HOME/.Xauthority:/root/.Xauthority
                 command: python master.py 127.0.0.1 5555 
-        camera:
+################################################################################################
+        camera0:
                 build:
                         context: .
                         dockerfile: Dockerfile 
@@ -29,6 +30,37 @@ services:
                 volumes:
                         - /dev/video0:/dev/video0
                 command: python -u camera.py
+        camera1:
+                build:
+                        context: .
+                        dockerfile: Dockerfile 
+                        target: camera
+                network_mode: host
+                privileged: true
+                volumes:
+                        - /dev/video1:/dev/video1
+                command: python -u camera.py
+        camera2:
+                build:
+                        context: .
+                        dockerfile: Dockerfile 
+                        target: camera
+                network_mode: host
+                privileged: true
+                volumes:
+                        - /dev/video2:/dev/video2
+                command: python -u camera.py
+        camera3:
+                build:
+                        context: .
+                        dockerfile: Dockerfile 
+                        target: camera
+                network_mode: host
+                privileged: true
+                volumes:
+                        - /dev/video3:/dev/video3
+                command: python -u camera.py
+##############################################################################################
         server1:
                 build:
                         context: .
