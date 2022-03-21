@@ -49,7 +49,6 @@ class Camera():
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 10000000)
-        self.sock.settimeout(0.2)
 
         # Video Capture
         self.vcap = cv2.VideoCapture(0)

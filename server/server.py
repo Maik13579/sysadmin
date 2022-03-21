@@ -89,13 +89,14 @@ class Server():
         last_frame = None
 
         while port in self.connections:
-            pass
-            #TODO make something usefull with the data
-            #msg = secure_connection.recv()
-            #frame = cv2.imdecode(pickle.loads(msg), cv2.IMREAD_COLOR)
-            #frame, last_frame = self._detect_motion(frame, last_frame)
+            msg = secure_connection.recv()
+            frame = cv2.imdecode(pickle.loads(msg), cv2.IMREAD_COLOR)
+            cv2.imshow(self.name+"| Cam on port: "+str(port), frame)
+            if cv2.waitKey(1):
+                pass
 
         del secure_connection
+        cv2.destroyWindow(self.name+"| Cam on port: "+str(port))
         print("close connection to port:", port)
 
     def _RSA_encrypt(self, msg, key):

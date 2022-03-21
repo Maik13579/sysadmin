@@ -43,18 +43,16 @@ class Master():
         accept_thread.start()
         
         # main loop
-        ports = []
+        pairs = {}
         while not self.is_shutdown:
-            for port, camera in self.cameras.items():
-                if port not in ports:
-                    for id_, server in self.servers.items():
-                        server[1].append(port)
-                    ports.append(port)
+            for port in self.cameras.copy():
+                if port not in pairs:
+                    for id_ in self.servers.copy():
+                        if len(self.servers[id_][1]) == 0:
+                            self.servers[id_][1].append(port)
+                            pairs[port] = id_
+                            break
 
-
-       #TODO REMOVE OFFLINE CAMS 
-
-            
     def _accept_socket(self):
         print("listening on ",self.ip,":",self.port)
         while not self.is_shutdown:
@@ -92,28 +90,27 @@ class Master():
         port = 4000
         while port in self.cameras: #if port is in use choose a new one
             port = random.randint(4000,5000)
-        secure_connection.send(str(port))
         self.cameras[port] = (secure_connection.get_key().decode(), True)
+        secure_connection.send(str(port))
         print("registered camera on port: ",port)
 
         # Create UDP socket
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        sock.settimeout(10)
         sock.bind(("", port))
         cam_connection = Connection(sock, self.cameras[port][0])
 
         while self.cameras[port][1]:
-            msg = cam_connection.recv()
-            frame = cv2.imdecode(pickle.loads(msg), cv2.IMREAD_COLOR)
-
-            cv2.imshow("Cam on port: "+str(port), frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                self.cameras[port] = (self.cameras[port][0], False)
+            # check if camera is streaming
+            try:
+                msg = cam_connection.recv()
+            except:
                 break
 
         del secure_connection
-        cv2.destroyWindow("Cam on port: "+str(port))
+        self.cameras.pop(port)
         print("Connection to camera closed")
         return
 

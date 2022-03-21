@@ -5,19 +5,10 @@ services:
                         context: .
                         dockerfile: Dockerfile 
                         target: master
-                runtime: nvidia
-                environment:
-                        DISPLAY: $DISPLAY
-                        QT_X11_NO_MITSHM: '1'
-                        NVIDIA_VISIBLE_DEVICES: all
-                        NVIDIA_DRIVER_CAPABILITIES: compute,video,utility,graphics
                 stdin_open: true
                 tty: true
                 privileged: true
                 network_mode: host
-                volumes:
-                        - /tmp/.X11-unix:/tmp/.X11-unix
-                        - $HOME/.Xauthority:/root/.Xauthority
                 command: python master.py 127.0.0.1 5555 
 ################################################################################################
         camera0:
@@ -38,7 +29,7 @@ services:
                 network_mode: host
                 privileged: true
                 volumes:
-                        - /dev/video1:/dev/video1
+                        - /dev/video1:/dev/video0
                 command: python -u camera.py
         camera2:
                 build:
@@ -48,7 +39,7 @@ services:
                 network_mode: host
                 privileged: true
                 volumes:
-                        - /dev/video2:/dev/video2
+                        - /dev/video2:/dev/video0
                 command: python -u camera.py
         camera3:
                 build:
@@ -58,7 +49,7 @@ services:
                 network_mode: host
                 privileged: true
                 volumes:
-                        - /dev/video3:/dev/video3
+                        - /dev/video3:/dev/video0
                 command: python -u camera.py
 ##############################################################################################
         server1:
@@ -66,17 +57,35 @@ services:
                         context: .
                         dockerfile: Dockerfile 
                         target: server
+                runtime: nvidia
+                environment:
+                        DISPLAY: $DISPLAY
+                        QT_X11_NO_MITSHM: '1'
+                        NVIDIA_VISIBLE_DEVICES: all
+                        NVIDIA_DRIVER_CAPABILITIES: compute,video,utility,graphics
                 stdin_open: true
                 tty: true
                 network_mode: host
+                volumes:
+                        - /tmp/.X11-unix:/tmp/.X11-unix
+                        - $HOME/.Xauthority:/root/.Xauthority
                 command: python server.py server1
         server2:
                 build:
                         context: .
                         dockerfile: Dockerfile
                         target: server
+                runtime: nvidia
+                environment:
+                        DISPLAY: $DISPLAY
+                        QT_X11_NO_MITSHM: '1'
+                        NVIDIA_VISIBLE_DEVICES: all
+                        NVIDIA_DRIVER_CAPABILITIES: compute,video,utility,graphics
                 stdin_open: true
                 tty: true
                 network_mode: host
+                volumes:
+                        - /tmp/.X11-unix:/tmp/.X11-unix
+                        - $HOME/.Xauthority:/root/.Xauthority
                 command: python server.py server2
 
