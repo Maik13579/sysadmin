@@ -1,0 +1,6 @@
+sockets
+pickle5
+opencv-python
+cryptography
+thread6
+pycryptodome

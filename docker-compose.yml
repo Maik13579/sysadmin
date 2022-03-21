@@ -1,0 +1,50 @@
+version: '2.4'
+services:
+        master:
+                build:
+                        context: .
+                        dockerfile: Dockerfile 
+                        target: master
+                runtime: nvidia
+                environment:
+                        DISPLAY: $DISPLAY
+                        QT_X11_NO_MITSHM: '1'
+                        NVIDIA_VISIBLE_DEVICES: all
+                        NVIDIA_DRIVER_CAPABILITIES: compute,video,utility,graphics
+                stdin_open: true
+                tty: true
+                privileged: true
+                network_mode: host
+                volumes:
+                        - /tmp/.X11-unix:/tmp/.X11-unix
+                        - $HOME/.Xauthority:/root/.Xauthority
+                command: python master.py 127.0.0.1 5555 
+        camera:
+                build:
+                        context: .
+                        dockerfile: Dockerfile 
+                        target: camera
+                network_mode: host
+                privileged: true
+                volumes:
+                        - /dev/video0:/dev/video0
+                command: python -u camera.py
+        server1:
+                build:
+                        context: .
+                        dockerfile: Dockerfile 
+                        target: server
+                stdin_open: true
+                tty: true
+                network_mode: host
+                command: python server.py server1
+        server2:
+                build:
+                        context: .
+                        dockerfile: Dockerfile
+                        target: server
+                stdin_open: true
+                tty: true
+                network_mode: host
+                command: python server.py server2
+
