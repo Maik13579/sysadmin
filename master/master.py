@@ -9,7 +9,6 @@ import Crypto
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 import hashlib
-import random
 
 from network import Connection
 
@@ -19,8 +18,8 @@ class Master():
         self.is_shutdown = False
         self.ip = ip
         self.port = port
-        self.cameras = {} #key = port, value = (encryption key, Online)
-        self.servers = {} #key = id, value =  (Connection(),[Ports])
+        self.cameras = {} #key = port, value = { "conn" : Connection, "online" : Boolean}
+        self.servers = {} #key = id, value = { "conn" : Connection, "ports" : [ports]}
         self.currentID = 0
 
         # RSA
@@ -43,15 +42,18 @@ class Master():
         accept_thread.start()
         
         # main loop
-        pairs = {}
+        ports = []
         while not self.is_shutdown:
             for port in self.cameras.copy():
-                if port not in pairs:
-                    for id_ in self.servers.copy():
-                        if len(self.servers[id_][1]) == 0:
-                            self.servers[id_][1].append(port)
-                            pairs[port] = id_
-                            break
+                if port in ports:
+                    continue
+                for id_ in self.servers.copy():
+                    if len(self.servers[id_]['ports'])==0:
+                        ports.append(port)
+                        self.servers[id_]['ports'].append(port)
+                        break
+
+                
 
     def _accept_socket(self):
         print("listening on ",self.ip,":",self.port)
@@ -80,7 +82,7 @@ class Master():
         elif msg == 'SERVER': #its a server
             id_ = self.currentID
             self.currentID += 1
-            self.servers[id_] = (secure_connection, [])
+            self.servers[id_] = {'conn':secure_connection, 'ports':[]}
             self._handle_server(id_, secure_connection)
         else:
             print('unknown type: ', msg)
@@ -89,8 +91,8 @@ class Master():
     def _handle_camera(self, secure_connection):
         port = 4000
         while port in self.cameras: #if port is in use choose a new one
-            port = random.randint(4000,5000)
-        self.cameras[port] = (secure_connection.get_key().decode(), True)
+            port += 1
+        self.cameras[port] = {'conn' : secure_connection.get_key().decode(), 'online' :  True }
         secure_connection.send(str(port))
         print("registered camera on port: ",port)
 
@@ -100,9 +102,9 @@ class Master():
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         sock.settimeout(10)
         sock.bind(("", port))
-        cam_connection = Connection(sock, self.cameras[port][0])
+        cam_connection = Connection(sock, self.cameras[port]['conn'])
 
-        while self.cameras[port][1]:
+        while self.cameras[port]['online']:
             # check if camera is streaming
             try:
                 msg = cam_connection.recv()
@@ -120,10 +122,10 @@ class Master():
 
         while not self.is_shutdown and online:
             # check for new ports
-            for port in self.servers[id_][1]:
+            for port in self.servers[id_]['ports']:
                 if port not in ports:
                     #send port and key from camera to server
-                    msg = str(port)+':'+self.cameras[port][0]
+                    msg = str(port)+':'+self.cameras[port]['conn']
                     print("send port and camera-key")
                     secure_connection.send(msg)
 
@@ -137,9 +139,9 @@ class Master():
 
             # check if you shouldn't listen to a port
             for port in ports:
-                if port not in self.servers[id_][1]:
+                if port not in self.servers[id_]['ports']:
                     #send port to server that he stop listen to it
-                    msg = str(port)+':'+self.cameras[port][0]
+                    msg = str(port)+':'+self.cameras[port]['conn']
                     print("send port and camera-key")
                     secure_connection.send(msg)
 
