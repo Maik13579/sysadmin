@@ -46,7 +46,7 @@ class Master():
         while not self.is_shutdown:
             for id_ in self.servers.copy():
                 if self.servers[id_][1] != self.cameras.keys():
-                    self.servers[id_] = (self.servers[id_][0], [self.cameras.keys())
+                    self.servers[id_] = (self.servers[id_][0], self.cameras.keys())
 
        #TODO REMOVE OFFLINE CAMS 
 
