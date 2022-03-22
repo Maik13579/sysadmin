@@ -91,6 +91,7 @@ class Server():
         while port in self.connections:
             msg = secure_connection.recv()
             frame = cv2.imdecode(pickle.loads(msg), cv2.IMREAD_COLOR)
+            frame, last_frame = self._detect_motion(frame, last_frame)
             cv2.imshow(self.name+"| Cam on port: "+str(port), frame)
             if cv2.waitKey(1):
                 pass
@@ -107,7 +108,7 @@ class Server():
         #if it's the first image we can't detect changes
         if last_frame is None:
             last_frame = frame.copy()
-            return frame
+            return frame, last_frame
 
         diff = cv2.absdiff(frame, last_frame)
         last_frame = frame.copy()
@@ -120,10 +121,9 @@ class Server():
             if cv2.contourArea(contour) > 500:
                 x, y, w, h = cv2.boundingRect(contour)
                 cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                
         return frame, last_frame
-
     
+
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         name = sys.argv[1]
