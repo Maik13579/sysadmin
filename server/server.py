@@ -29,45 +29,44 @@ class Server():
 
         # get Master publickey
         msg = master_sock.recv(100000).decode()
-        print("received public key")
+        print(master_sock.getsockname()," -> ",master_sock.getpeername(),"| received public key")
         self.master_pubkey = RSA.import_key(msg)
 
         # generate symetric key
+        print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| generate key")
         master_key = Fernet.generate_key()
-        print("generate key")
 
         # encrypt it with master publickey and send it to master
         msg = self._RSA_encrypt(master_key, self.master_pubkey)
+        print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| send key")
         master_sock.send(msg)
-        print("send key")
 
         self.secure_connection = Connection(master_sock, master_key)
         self.secure_connection.send("SERVER")
 
-        print("waiting for camera connection")
+        print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| waiting for camera connection")
 
         while True:
             # get port and key from master
             msg = self.secure_connection.recv().decode()
             port, key = msg.split(':')
             port = int(port)
+            print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| received port and key")
             if port in self.connections:
                 #check if key is right
                 if key != self.connections[port].get_key():
-                    print("wrong key: ", key)
+                    print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| wrong key: ", key)
                     continue
                 # send ack. port:key
-                print("send ack")
+                print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| send ack")
                 msg+=":END"
                 self.secure_connection.send(msg)
                 self.connections.pop(port)
                 continue
 
-            print("received port and key")
-
             # send ack. port:key
-            print("send ack")
             msg += ":START"
+            print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| send ack")
             self.secure_connection.send(msg)
 
             t = threading.Thread(target=self._handle_camera, args=(port, key, ))
@@ -84,7 +83,7 @@ class Server():
 
         # add connection to dictionaries
         self.connections[port] = secure_connection
-        print("camera connected: port=",port)
+        print(sock.getsockname(), "| camera connected")
 
         last_frame = None
 
@@ -98,7 +97,7 @@ class Server():
 
         del secure_connection
         cv2.destroyWindow(self.name+"| Cam on port: "+str(port))
-        print("close connection to port:", port)
+        print(sock.getsockname(), "| close connection")
 
     def _RSA_encrypt(self, msg, key):
         cipher = PKCS1_OAEP.new(key)

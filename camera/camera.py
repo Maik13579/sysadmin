@@ -32,17 +32,17 @@ class Camera():
 
         # get Master publickey
         msg = master_sock.recv(100000).decode()
-        print("received public key")
+        print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| received public key")
         self.master_pubkey = RSA.import_key(msg)
 
         # generate symetric key
         self.key = Fernet.generate_key()
-        print("generate key")
+        print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| generate key")
 
         # encrypt it with master publickey and send it to master
         msg = self._RSA_encrypt(self.key, self.master_pubkey)
         master_sock.send(msg)
-        print("send key")
+        print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| send key")
 
         secure_connection = Connection(master_sock, self.key)
         secure_connection.send("CAM")
@@ -57,7 +57,7 @@ class Camera():
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 10000000)
 
 
-        print("streaming on port:",self.port)
+        print("streaming on port ", self.port)
 
         while True:
             _, frame = self.vcap.read()
