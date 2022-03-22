@@ -22,7 +22,7 @@ class Server():
         connected = False
         while not connected:
             try:
-                master_sock.connect(("127.0.0.1", 5555))
+                master_sock.connect(("127.0.0.1", 55555))
                 connected = True
             except:
                 pass

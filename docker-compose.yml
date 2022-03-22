@@ -9,7 +9,7 @@ services:
                 tty: true
                 privileged: true
                 network_mode: host
-                command: python master.py 127.0.0.1 5555 
+                command: python master.py 127.0.0.1 55555 
 ################################################################################################
         camera0:
                 build:
