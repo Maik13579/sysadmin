@@ -1,13 +1,24 @@
 const express = require('express');
-const http = require('http');
+const https = require('https');
 const bcrypt = require('bcrypt');
 const path = require("path");
 const bodyParser = require('body-parser');
 const userDataManager = require('./userDataManager');
+const fs = require('fs');
+
+var options = {
+  key: fs.readFileSync('key.pem'),
+  cert: fs.readFileSync('cert.pem')
+};
 
 const app = express();
-const server = http.createServer(app);
+const server = https.createServer(options, app);
 
+
+app.use(express.json());
+app.use("/auth", require("./Auth/route"))
+
+/*
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(express.static(path.join(__dirname,'./public')));
 
@@ -44,8 +55,12 @@ app.post('/login', async (req, res) => {
         res.send("Internal server error " + e);
     }
 });
+*/
 
-
-server.listen(3000, function() {
-    console.log("server is listening on port: 3000");
+server.listen(5000, () =>
+    console.log("server is listening on port: 443")
+)
+process.on("unhandledRejection", err => {
+  console.log(`An error occured: ${err.message}`);
+  server.close(() => process.exit(1))
 });
