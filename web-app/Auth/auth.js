@@ -1,4 +1,5 @@
 const UserSchema = require("../model/User");
+const users = require('../data/userDB.json');
 const Ajv = require("ajv");
 const ajv = new Ajv();
 const bcrypt = require('bcrypt');
@@ -22,25 +23,31 @@ exports.register = async (req, res, next) => {
     }
 
     if (validate(user)) {
+      for (var i = 0; i < users.length; i++) {
+        if (bcrypt.compareSync(username, users[i].username)) {
+          return res.status(405).json({message: "User already exists"});
+        }
+      }
+
       password = await bcrypt.hash(password, 10);
       username = await bcrypt.hash(username, 10);
 
       user.username = username;
       user.password = password;
+      users.push(user);
 
-// TODO: get all users. check if user already exists. if not then add this user to current users
-      fs.writeFileSync('C:/Users/janni/github/sysadmin/web-app/data/userDB.json', JSON.stringify(user));
+      fs.writeFileSync('C:/Users/janni/github/sysadmin/web-app/data/userDB.json', JSON.stringify(users));
       return res.status(200).json({
         message: "User successfully created",
         user,
       });
     }
 
-    return res.status(405).json({message: "Request denied"});
+    return res.status(400).json({message: "Request denied"});
   } catch (err) {
     console.log(err);
-    res.status(401).json({
-      message: "User not successfully created",
+    res.status(400).json({
+      message: "User not created",
       error: error.message,
     });
   }
