@@ -90,3 +90,25 @@ exports.login = async (req, res, next) => {
     });
   }
 }
+
+exports.deleteUser = async (req, res, next) => {
+  const { username } = req.body;
+
+  for (var i = 0; i < users.length; i++) {
+    if (bcrypt.compareSync(username, users[i].username)) {
+      users.splice(i, 1);
+      try {
+        fs.writeFileSync('C:/Users/janni/github/sysadmin/web-app/data/userDB.json', JSON.stringify(users));
+      } catch (e) {
+        res.status(400).json({
+          message: "An error occured",
+          error: error.message,
+        });
+      }
+
+      return res.status(200).json({message: "User deleted", username});
+    }
+  }
+
+  return res.status(400).json({message: "User not found", username});
+}
