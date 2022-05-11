@@ -5,7 +5,7 @@ const UserSchema = {
     password: {type: "string", minLength: 6},
     role: {type: "string"}
   },
-  required: ["username", "password", "role"],
+  required: ["username", "password"],
 }
 
 module.exports = UserSchema;
