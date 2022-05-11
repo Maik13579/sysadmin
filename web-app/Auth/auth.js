@@ -4,8 +4,10 @@ const Ajv = require("ajv");
 const ajv = new Ajv();
 const bcrypt = require('bcrypt');
 const fs = require('fs');
+const jwt = require("jsonwebtoken");
 
 const validate = ajv.compile(UserSchema);
+const jwtSecret = '5ab67fbe236d1025a9b52b6179a8db6dca16a4d0a4a843c86c09535feb0ddaddc82f8b';
 
 exports.register = async (req, res, next) => {
   let { username, password } = req.body;
@@ -38,9 +40,23 @@ exports.register = async (req, res, next) => {
       users.push(user);
 
       fs.writeFileSync('C:/Users/janni/github/sysadmin/web-app/data/userDB.json', JSON.stringify(users));
-      return res.status(200).json({
-        message: "User successfully created",
-        user,
+
+      // jwt token
+      const maxAge = 60 * 60; // 60s * 60 = 1h
+      const token = jwt.sign(
+        { id: user.username, role: user.role },
+        jwtSecret,
+        { expiresIn: maxAge }
+      );
+
+      res.cookie("jwt", token, {
+        secure: true,
+        httpOnly: true,
+        maxAge: maxAge * 1000 // 1h in ms
+      });
+
+      return res.status(201).json({
+        message: "User successfully created"
       });
     }
 
@@ -81,7 +97,21 @@ exports.login = async (req, res, next) => {
       return res.status(401).json({message: "Login failed", error: "User not found."});
     }
     else {
-      return res.status(200).json({message: "Login successful", user});
+      // jwt token
+      const maxAge = 60 * 60; // 60s * 60 = 1h
+      const token = jwt.sign(
+        { id: user.username, role: user.role },
+        jwtSecret,
+        { expiresIn: maxAge }
+      );
+
+      res.cookie("jwt", token, {
+        secure: true,
+        httpOnly: true,
+        maxAge: maxAge * 1000 // 1h in ms
+      });
+
+      return res.status(200).json({message: "Login successful"});
     }
   } catch (e) {
     res.status(400).json({
