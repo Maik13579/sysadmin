@@ -11,13 +11,15 @@ const jwtSecret = '5ab67fbe236d1025a9b52b6179a8db6dca16a4d0a4a843c86c09535feb0dd
 
 exports.register = async (req, res, next) => {
   let { username, password } = req.body;
+  let role = req.body.role;
+  if (!role) {
+    role = "Basic";
+  }
 
   try {
-    if(password != undefined && password.length < 6) {
+    if(password && password.length < 6) {
       return res.status(400).json({message: "Password less than 6 characters;"});
     }
-
-    const role = "Basic";
 
     const user = {
       username,
@@ -40,20 +42,6 @@ exports.register = async (req, res, next) => {
       users.push(user);
 
       fs.writeFileSync('C:/Users/janni/github/sysadmin/web-app/data/userDB.json', JSON.stringify(users));
-
-      // jwt token
-      const maxAge = 60 * 60; // 60s * 60 = 1h
-      const token = jwt.sign(
-        { id: user.username, role: user.role },
-        jwtSecret,
-        { expiresIn: maxAge }
-      );
-
-      res.cookie("jwt", token, {
-        secure: true,
-        httpOnly: true,
-        maxAge: maxAge * 1000 // 1h in ms
-      });
 
       return res.status(201).json({
         message: "User successfully created"

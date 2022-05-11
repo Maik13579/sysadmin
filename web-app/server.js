@@ -1,10 +1,8 @@
 const express = require('express');
 const https = require('https');
-const bcrypt = require('bcrypt');
-const path = require("path");
-const bodyParser = require('body-parser');
-const userDataManager = require('./userDataManager');
 const fs = require('fs');
+const cookieParser = require("cookie-parser");
+const { adminAuth, userAuth } = require("./middleware/auth.js");
 
 var options = {
   key: fs.readFileSync('key.pem'),
@@ -16,7 +14,11 @@ const server = https.createServer(options, app);
 
 
 app.use(express.json());
-app.use("/auth", require("./Auth/route"))
+app.use(cookieParser());
+app.use("/auth", require("./Auth/route"));
+
+app.get("/admin", adminAuth, (req, res) => res.send("Admin Route"));
+app.get("/basic", userAuth, (req, res) => res.send("User Route"));
 
 /*
 app.use(bodyParser.urlencoded({extended: false}));
