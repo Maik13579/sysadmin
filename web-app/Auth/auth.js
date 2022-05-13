@@ -5,6 +5,7 @@ const ajv = new Ajv();
 const bcrypt = require('bcrypt');
 const fs = require('fs');
 const jwt = require("jsonwebtoken");
+const path = require("path");
 
 const validate = ajv.compile(UserSchema);
 const jwtSecret = '5ab67fbe236d1025a9b52b6179a8db6dca16a4d0a4a843c86c09535feb0ddaddc82f8b';
@@ -29,19 +30,17 @@ exports.register = async (req, res, next) => {
 
     if (validate(user)) {
       for (var i = 0; i < users.length; i++) {
-        if (bcrypt.compareSync(username, users[i].username)) {
+        if (username === users[i].username) {
           return res.status(405).json({message: "User already exists"});
         }
       }
 
       password = await bcrypt.hash(password, 10);
-      username = await bcrypt.hash(username, 10);
 
-      user.username = username;
       user.password = password;
       users.push(user);
 
-      fs.writeFileSync('C:/Users/janni/github/sysadmin/web-app/data/userDB.json', JSON.stringify(users));
+      fs.writeFileSync(path.join(__dirname,'./data/userDB.json'), JSON.stringify(users));
 
       return res.status(201).json({
         message: "User successfully created"
@@ -74,7 +73,7 @@ exports.login = async (req, res, next) => {
   try {
     let foundUser = false;
     for (var i = 0; i < users.length; i++) {
-      if (bcrypt.compareSync(username, users[i].username) && bcrypt.compareSync(password, users[i].password)) {
+      if (username === users[i].username && bcrypt.compareSync(password, users[i].password)) {
         foundUser = true;
         user.role = users[i].role;
         break;
@@ -113,7 +112,7 @@ exports.deleteUser = async (req, res, next) => {
   const { username } = req.body;
 
   for (var i = 0; i < users.length; i++) {
-    if (bcrypt.compareSync(username, users[i].username)) {
+    if (username === users[i].username) {
       users.splice(i, 1);
       try {
         fs.writeFileSync('C:/Users/janni/github/sysadmin/web-app/data/userDB.json', JSON.stringify(users));

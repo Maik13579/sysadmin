@@ -1,6 +1,7 @@
 const express = require('express');
 const https = require('https');
 const fs = require('fs');
+const path = require("path");
 const cookieParser = require("cookie-parser");
 const { adminAuth, userAuth } = require("./middleware/auth.js");
 
@@ -20,14 +21,37 @@ app.use("/auth", require("./Auth/route"));
 app.get("/admin", adminAuth, (req, res) => res.send("Admin Route"));
 app.get("/basic", userAuth, (req, res) => res.send("User Route"));
 
+app.get('/', (req,res) => {
+    res.sendFile(path.join(__dirname,'./public/index.html'));
+});
+
+app.get('/admin/register', adminAuth, (req,res) => {
+    res.sendFile(path.join(__dirname,'./public/register.html'));
+});
+
+app.get('/login', (req,res) => {
+    res.sendFile(path.join(__dirname,'./public/login.html'));
+});
+
+app.get('/admin', adminAuth, (req,res) => {
+    res.sendFile(path.join(__dirname,'./public/admin.html'));
+});
+
+app.get('/home', userAuth, (req,res) => {
+    res.sendFile(path.join(__dirname,'./public/home.html'));
+});
+
+app.get('/logout', (req,res) => {
+    res.cookie("jwt", "", { maxAge: "1" });
+    res.redirect("/");
+});
+
 /*
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(express.static(path.join(__dirname,'./public')));
 
 
-app.get('/', (req,res) => {
-    res.sendFile(path.join(__dirname,'./public/index.html'));
-});
+
 
 app.post('/login', async (req, res) => {
     try{
@@ -59,7 +83,7 @@ app.post('/login', async (req, res) => {
 });
 */
 
-server.listen(5000, () =>
+server.listen(443, () =>
     console.log("server is listening on port: 443")
 )
 process.on("unhandledRejection", err => {
