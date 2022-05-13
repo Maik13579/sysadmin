@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang = "en">
+<head>
+	<meta charset = "UTF-8">
+	<title> Home </title>
+	<style>
+		#mylink{
+			font-size: 25px;
+		}
+	</style>
+</head>
+<body align='center'>
+  <header>
+		<h1>Home</h1>
+		<button type="button" name="logout"><a href="/logout">Log Out</a></button>
+	</header>
+	<button type="button" id="user-management" onclick="switchPage()">User Management</button>
+	<p>
+    Here are cool camera things :D
+  </p>
+
+	<script>
+		function switchPage() {
+			location.assign('/admin');
+		}
+
+		const adminButton = document.querySelector('#user-management');
+		const tryAccess = async () => {
+			try {
+			 	const res = await fetch('/auth/tryAdminAccess', {
+				method: 'GET',
+					headers: { 'Content-Type': 'application/json' }
+			 	});
+
+			 	if(res.status === 200) {
+					adminButton.style.visibility = "visible";
+			 	}
+				else {
+					adminButton.style.visibility = "hidden";
+				}
+		 	} catch (err) {
+			 	console.log(err.message)
+		 	}
+	}
+
+	tryAccess();
+</script>
+</body>
+</html>

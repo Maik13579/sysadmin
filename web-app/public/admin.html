@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Management</title>
+    <style>
+      table {
+        width: 40%;
+      }
+      table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+      }
+      td {
+        text-align: center;
+        padding: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="display" style="background-color: red;"></div>
+    <h1>Registered Users</h1>
+    <button type="button" name="logout"><a href="/logout">Log Out</a></button>
+    <button type="button" name="registerUser" onclick="switchRegister()">Register new User</button>
+    <table>
+      <tr>
+        <th>Username</th>
+        <th>Role</th>
+        <th>Action</th>
+      </tr>
+    </table>
+    <button type="button" name="back" onclick="backHome()">Back to Home</button>
+
+    <script>
+      const table = document.querySelector("table");
+      const display = document.querySelector(".display");
+
+      const getUsers = async () => {
+        const res = await fetch("/auth/getUsers");
+        const data = await res.json();
+        data.currentUsers.map(mappedUser => {
+          let tr = `<tr> <td>${mappedUser.username}</td> <td>${mappedUser.role}</td> <td><button class="delete">Delete User</button></td> </tr>`;
+          table.innerHTML += tr;
+
+          const deleteUser = document.querySelectorAll(".delete");
+          deleteUser.forEach((button, i) => {
+            button.addEventListener('click', async () => {
+              display.textContent ='';
+              const username = mappedUser.username;
+              const res = await fetch('/auth/deleteUser', {
+                method: 'DELETE',
+                body: JSON.stringify({ username: username }),
+                headers: {'Content-Type': 'application/json'}
+              });
+
+              const dataDelete = await res.json();
+              if (res.status === 401) {
+                document.body.scrollTop = 0;
+                document.documentElement.scrollTop = 0;
+                return display.textContent = `${dataUpdate.message}. ${dataUpdate.error ? dataUpdate.error : ''}`;
+              }
+
+              location.assign('/admin');
+            });
+          });
+        });
+      }
+
+      function backHome() {
+  			location.assign('/home');
+  		}
+
+      function switchRegister() {
+  			location.assign('/admin/register');
+  		}
+
+      getUsers();
+    </script>
+  </body>
+</html>

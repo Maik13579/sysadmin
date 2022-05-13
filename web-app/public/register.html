@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register new User</title>
+  </head>
+  <body>
+    <h1>Register new User</h1>
+    <form>
+      <div class="error" style="background-color: red;"></div>
+      <br/>
+      <label for="username">Username</label><br/>
+      <input type="text" id="username" required /><br/>
+      <label for="password">Password</label><br/>
+      <input type="password" id="password" required /><br/>
+      <label for="role">Role</label> <br>
+      <select name="role" id="role">
+        <option value="Basic" selected>Basic</option>
+        <option value="Admin">Admin</option>
+      </select> <br><br>
+      <input type="button" name="backBtn" value="Back" onclick="goBack()">
+      <input type="submit" value="Register"/>
+    </form>
+
+    <script type="text/javascript">
+      const form = document.querySelector('form');
+      const username = document.querySelector('#username');
+      const password = document.querySelector('#password');
+      const role = document.querySelector('#role');
+      const display = document.querySelector('.error');
+      form.addEventListener('submit', async (e) => {
+         e.preventDefault();
+         display.textContent = '';
+         try {
+          const res = await fetch('/auth/register', {
+           method: 'POST',
+            body: JSON.stringify({ username: username.value, password: password.value, role: role.value }),
+           headers: { 'Content-Type': 'application/json' }
+          });
+          const data = await res.json();
+          if(res.status === 400 || res.status === 401) {
+            return display.textContent = `${data.message}. ${data.error ? data.error : ''}`;
+          }
+          location.assign('/admin');
+        } catch (err) {
+          console.log(err.message)
+        }
+      });
+
+      function goBack() {
+        location.assign('/admin');
+      }
+    </script>
+  </body>
+</html>
