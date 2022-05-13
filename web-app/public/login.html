@@ -10,11 +10,11 @@
     <form>
       <div class="error" style="background-color: red;"></div>
       <br />
-      <label for="username">Username</label><br />
-      <input type="text" id="username" required /><br />
-      <label for="password">Password</label><br />
-      <input type="password" id="password" required /><br />
-      <input type="submit" value="login" /><br />
+      <label for="username">Username</label><br/>
+      <input type="text" id="username" required /><br/>
+      <label for="password">Password</label><br/>
+      <input type="password" id="password" required /><br/>
+      <input type="submit" value="login" /><br/>
     </form>
 
 		<script>
@@ -23,7 +23,7 @@
 			const password = document.querySelector('#password');
 			const display = document.querySelector('.error');
 			form.addEventListener('submit', async (e) => {
-				e.preventDefault()
+				e.preventDefault();
 				display.textContent = '';
 				try {
 					const res = await fetch('/auth/login', {
@@ -32,10 +32,13 @@
 						headers: { 'Content-Type': 'application/json' }
 					});
 					const data = await res.json();
-					if (res.status === 400 || res.status === 401) {
+
+					if(res.status === 200) {
+						location.assign('/home');
+					}
+					else {
 						return display.textContent = `${data.message}. ${data.error ? data.error : ''}`;
 					}
-					location.assign('/home');
 				} catch (err) {
 						console.log(err.message)
 				}

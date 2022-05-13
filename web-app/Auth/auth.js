@@ -40,7 +40,7 @@ exports.register = async (req, res, next) => {
       user.password = password;
       users.push(user);
 
-      fs.writeFileSync(path.join(__dirname,'./data/userDB.json'), JSON.stringify(users));
+      fs.writeFileSync(path.join(__dirname,'../data/userDB.json'), JSON.stringify(users));
 
       return res.status(201).json({
         message: "User successfully created"
@@ -70,11 +70,14 @@ exports.login = async (req, res, next) => {
     return res.status(400).json({message: "Request Denied", error: "Request contains errors."});
   }
 
+  console.log(users.length);
   try {
     let foundUser = false;
     for (var i = 0; i < users.length; i++) {
+      console.log(username + " " + users[i].username);
       if (username === users[i].username && bcrypt.compareSync(password, users[i].password)) {
         foundUser = true;
+        console.log(user);
         user.role = users[i].role;
         break;
       }
@@ -106,17 +109,21 @@ exports.login = async (req, res, next) => {
       error: error.message,
     });
   }
-}
+};
 
 exports.deleteUser = async (req, res, next) => {
-  const { username } = req.body;
+  const username = req.body.username;
+  if (username === undefined) {
+      return res.status(400).json({message: "No User specified"});
+  }
 
   for (var i = 0; i < users.length; i++) {
     if (username === users[i].username) {
       users.splice(i, 1);
       try {
-        fs.writeFileSync('C:/Users/janni/github/sysadmin/web-app/data/userDB.json', JSON.stringify(users));
+        fs.writeFileSync(path.join(__dirname,'../data/userDB.json'), JSON.stringify(users));
       } catch (e) {
+        console.log(e);
         res.status(400).json({
           message: "An error occured",
           error: error.message,
@@ -128,4 +135,20 @@ exports.deleteUser = async (req, res, next) => {
   }
 
   return res.status(400).json({message: "User not found", username});
+};
+
+exports.getUsers = async (req, res, next) => {
+  const currentUsers = [];
+  for (var i = 0; i < users.length; i++) {
+    currentUsers[i] = {"username": users[i].username, "role": users[i].role}
+  }
+
+  res.status(200).json({
+    message: "Registered Users",
+    currentUsers,
+  });
+};
+
+exports.tryAdminAccess = async (req, res, next) => {
+  res.status(200);
 }
