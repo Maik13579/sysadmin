@@ -3,13 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="<%= csrfToken %>">
     <title>Login Page</title>
   </head>
   <body>
     <h1>Login Page</h1>
     <form>
       <div class="error" style="background-color: red;"></div>
-      <br />
+      <br/>
       <label for="username">Username</label><br/>
       <input type="text" id="username" required /><br/>
       <label for="password">Password</label><br/>
@@ -22,14 +23,20 @@
 			const username = document.querySelector('#username');
 			const password = document.querySelector('#password');
 			const display = document.querySelector('.error');
+      const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
 			form.addEventListener('submit', async (e) => {
 				e.preventDefault();
 				display.textContent = '';
 				try {
 					const res = await fetch('/auth/login', {
+            credentials: 'same-origin',
 						method: 'POST',
 						body: JSON.stringify({ username: username.value, password: password.value }),
-						headers: { 'Content-Type': 'application/json' }
+						headers: {
+              'Content-Type': 'application/json',
+              'CSRF-Token': token
+            }
 					});
 					const data = await res.json();
 

@@ -5,44 +5,52 @@ const path = require("path");
 const cookieParser = require("cookie-parser");
 const { adminAuth, userAuth } = require("./middleware/auth.js");
 const helmet = require("helmet");
+var bodyParser = require('body-parser');
+const csrfProtection = require("./middleware/csrfProtection.js");
 
+// https
 var options = {
   key: fs.readFileSync('key.pem'),
   cert: fs.readFileSync('cert.pem')
 };
 
 const app = express();
+
+app.set("view engine", "ejs");
+
 app.use(
   helmet({
     contentSecurityPolicy: false,
   })
 );
 
-const server = https.createServer(options, app);
 
+const server = https.createServer(options, app);
 
 app.use(express.json());
 app.use(cookieParser());
+app.use(csrfProtection);
+
 app.use("/auth", require("./Auth/route"));
 
 app.get('/', (req,res) => {
-    res.sendFile(path.join(__dirname,'./public/index.html'));
+    res.render('index');
 });
 
 app.get('/admin/register', adminAuth, (req,res) => {
-    res.sendFile(path.join(__dirname,'./public/register.html'));
+    res.render('register', { csrfToken: req.csrfToken() });
 });
 
 app.get('/login', (req,res) => {
-    res.sendFile(path.join(__dirname,'./public/login.html'));
+    res.render('login', { csrfToken: req.csrfToken() });
 });
 
 app.get('/admin', adminAuth, (req,res) => {
-    res.sendFile(path.join(__dirname,'./public/admin.html'));
+    res.render('admin', { csrfToken: req.csrfToken() });
 });
 
 app.get('/home', userAuth, (req,res) => {
-    res.sendFile(path.join(__dirname,'./public/home.html'));
+    res.render('home', { csrfToken: req.csrfToken() });
 });
 
 app.get('/logout', (req,res) => {

@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="<%= csrfToken %>">
     <title>User Management</title>
     <style>
       table {
@@ -36,6 +37,7 @@
     <script>
       const table = document.querySelector("table");
       const display = document.querySelector(".display");
+      const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
       const getUsers = async () => {
         const res = await fetch("/auth/getUsers");
@@ -52,7 +54,10 @@
               const res = await fetch('/auth/deleteUser', {
                 method: 'DELETE',
                 body: JSON.stringify({ username: username }),
-                headers: {'Content-Type': 'application/json'}
+                headers: {
+                  'Content-Type': 'application/json',
+                  'CSRF-Token': token
+                }
               });
 
               const dataDelete = await res.json();
