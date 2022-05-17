@@ -9,7 +9,7 @@ var options = {
   key: fs.readFileSync('key.pem'),
   cert: fs.readFileSync('cert.pem')
 };
-
+'use strict'
 const app = express();
 const server = https.createServer(options, app);
 

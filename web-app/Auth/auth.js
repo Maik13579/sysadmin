@@ -51,8 +51,7 @@ exports.register = async (req, res, next) => {
   } catch (err) {
     console.log(err);
     res.status(400).json({
-      message: "An error occured. User was not created",
-      error: error.message,
+      message: "An error occured. User was not created"
     });
   }
 };
@@ -105,8 +104,7 @@ exports.login = async (req, res, next) => {
     }
   } catch (e) {
     res.status(400).json({
-      message: "An error occured",
-      error: error.message,
+      message: "An error occured"
     });
   }
 };
