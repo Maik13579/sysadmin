@@ -69,14 +69,11 @@ exports.login = async (req, res, next) => {
     return res.status(400).json({message: "Request Denied", error: "Request contains errors."});
   }
 
-  console.log(users.length);
   try {
     let foundUser = false;
     for (var i = 0; i < users.length; i++) {
-      console.log(username + " " + users[i].username);
       if (username === users[i].username && bcrypt.compareSync(password, users[i].password)) {
         foundUser = true;
-        console.log(user);
         user.role = users[i].role;
         break;
       }

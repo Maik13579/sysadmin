@@ -12,7 +12,12 @@ var options = {
 };
 'use strict'
 const app = express();
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+  })
+);
+
 const server = https.createServer(options, app);
 
 
