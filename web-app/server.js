@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require("path");
 const cookieParser = require("cookie-parser");
 const { adminAuth, userAuth } = require("./middleware/auth.js");
+const helmet = require("helmet");
 
 var options = {
   key: fs.readFileSync('key.pem'),
@@ -11,6 +12,7 @@ var options = {
 };
 'use strict'
 const app = express();
+app.use(helmet());
 const server = https.createServer(options, app);
 
 
