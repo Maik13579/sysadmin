@@ -11,6 +11,12 @@ const validate = ajv.compile(UserSchema);
 const jwtSecret = '5ab67fbe236d1025a9b52b6179a8db6dca16a4d0a4a843c86c09535feb0ddaddc82f8b';
 
 exports.register = async (req, res, next) => {
+  const fileBuffer = fs.readFileSync(path.join(__dirname,'../data/userDB.json'));
+  const hashedValue = fs.readFileSync(path.join(__dirname,'../data/hash.txt'));
+  if (!bcrypt.compareSync(fileBuffer.toString(), hashedValue.toString())) {
+    return res.status(401).json({message: "User Authentication compromissed"});
+  }
+  
   let { username, password } = req.body;
   let role = req.body.role;
   if (!role) {
@@ -26,7 +32,7 @@ exports.register = async (req, res, next) => {
       username,
       password,
       role
-    }
+    };
 
     if (validate(user)) {
       for (var i = 0; i < users.length; i++) {
@@ -41,6 +47,10 @@ exports.register = async (req, res, next) => {
       users.push(user);
 
       fs.writeFileSync(path.join(__dirname,'../data/userDB.json'), JSON.stringify(users));
+
+      const fileBuffer = fs.readFileSync(path.join(__dirname,'../data/userDB.json'));
+      const hashSum = bcrypt.hashSync(fileBuffer.toString(), 10);
+      fs.writeFileSync(path.join(__dirname,'../data/hash.txt'), hashSum.toString());
 
       return res.status(201).json({
         message: "User successfully created"
@@ -57,13 +67,19 @@ exports.register = async (req, res, next) => {
 };
 
 exports.login = async (req, res, next) => {
+  const fileBuffer = fs.readFileSync(path.join(__dirname,'../data/userDB.json'));
+  const hashedValue = fs.readFileSync(path.join(__dirname,'../data/hash.txt'));
+  if (!bcrypt.compareSync(fileBuffer.toString(), hashedValue.toString())) {
+    return res.status(401).json({message: "User Authentication compromissed"});
+  }
+
   let { username, password } = req.body;
   const role = "";
   const user = {
     username,
     password,
     role
-  }
+  };
 
   if (!validate(user)) {
     return res.status(400).json({message: "Request Denied", error: "Request contains errors."});
@@ -107,6 +123,12 @@ exports.login = async (req, res, next) => {
 };
 
 exports.deleteUser = async (req, res, next) => {
+  const fileBuffer = fs.readFileSync(path.join(__dirname,'../data/userDB.json'));
+  const hashedValue = fs.readFileSync(path.join(__dirname,'../data/hash.txt'));
+  if (!bcrypt.compareSync(fileBuffer.toString(), hashedValue.toString())) {
+    return res.status(401).json({message: "User Authentication compromissed"});
+  }
+
   const username = req.body.username;
   if (username === undefined) {
       return res.status(400).json({message: "No User specified"});
@@ -125,6 +147,9 @@ exports.deleteUser = async (req, res, next) => {
         });
       }
 
+      const fileBuffer = fs.readFileSync(path.join(__dirname,'../data/userDB.json'));
+      const hashSum = bcrypt.hashSync(fileBuffer.toString(), 10);
+      fs.writeFileSync(path.join(__dirname,'../data/hash.txt'), hashSum.toString());
       return res.status(200).json({message: "User deleted", username});
     }
   }
@@ -133,9 +158,15 @@ exports.deleteUser = async (req, res, next) => {
 };
 
 exports.getUsers = async (req, res, next) => {
+  const fileBuffer = fs.readFileSync(path.join(__dirname,'../data/userDB.json'));
+  const hashedValue = fs.readFileSync(path.join(__dirname,'../data/hash.txt'));
+  if (!bcrypt.compareSync(fileBuffer.toString(), hashedValue.toString())) {
+    return res.status(401).json({message: "User Authentication compromissed"});
+  }
+
   const currentUsers = [];
   for (var i = 0; i < users.length; i++) {
-    currentUsers[i] = {"username": users[i].username, "role": users[i].role}
+    currentUsers[i] = {"username": users[i].username, "role": users[i].role};
   }
 
   res.status(200).json({
@@ -146,4 +177,4 @@ exports.getUsers = async (req, res, next) => {
 
 exports.tryAdminAccess = async (req, res, next) => {
   res.status(200);
-}
+};

@@ -10,7 +10,7 @@ var options = {
   key: fs.readFileSync('key.pem'),
   cert: fs.readFileSync('cert.pem')
 };
-'use strict'
+
 const app = express();
 app.use(
   helmet({
@@ -52,8 +52,8 @@ app.get('/logout', (req,res) => {
 
 server.listen(443, () =>
     console.log("server is listening on port: 443")
-)
+);
 process.on("unhandledRejection", err => {
   console.log(`An error occured: ${err.message}`);
-  server.close(() => process.exit(1))
+  server.close(() => process.exit(1));
 });
