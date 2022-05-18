@@ -11,6 +11,15 @@ const validator = require('validator');
 const validate = ajv.compile(UserSchema);
 const jwtSecret = '5ab67fbe236d1025a9b52b6179a8db6dca16a4d0a4a843c86c09535feb0ddaddc82f8b';
 
+function validateInput(input) {
+  if(validator.contains(input, '>') || validator.contains(input, '<') ||
+  validator.contains(input, '&') || validator.contains(input, '\'') || validator.contains(input, '\"') || validator.contains(input, '/')) {
+    return false;
+  }
+
+  return true;
+}
+
 exports.register = async (req, res, next) => {
   const fileBuffer = fs.readFileSync(path.join(__dirname,'../data/userDB.json'));
   const hashedValue = fs.readFileSync(path.join(__dirname,'../data/hash.txt'));
@@ -22,12 +31,20 @@ exports.register = async (req, res, next) => {
   let role = req.body.role;
 
   // sanitize
-  username = validator.escape(username);
   username = validator.trim(username);
-  password = validator.escape(password);
+  if (!validateInput(username)) {
+    return res.status(400).json({message: "User not created: ", error: "Username contains forbidden characters: < > & \' \" or /"});
+  }
+
   password = validator.trim(password);
-  role = validator.escape(role);
+  if (!validateInput(password)) {
+    return res.status(400).json({message: "User not created: ", error: "Password contains forbidden characters: < > & \' \" or /"});
+  }
+
   role = validator.trim(role);
+  if (!validateInput(role)) {
+    return res.status(400).json({message: "User not created: ", error: "Userrole contains forbidden characters: < > & \' \" or /"});
+  }
 
   if (!role) {
     role = "Basic";
@@ -35,7 +52,7 @@ exports.register = async (req, res, next) => {
 
   try {
     if(password && password.length < 6) {
-      return res.status(400).json({message: "Password less than 6 characters;"});
+      return res.status(400).json({message: "Password needs at least 6 characters;"});
     }
 
     const user = {
@@ -87,12 +104,20 @@ exports.login = async (req, res, next) => {
   let role = "";
 
   // sanitize
-  username = validator.escape(username);
   username = validator.trim(username);
-  password = validator.escape(password);
+  if (!validateInput(username)) {
+    return res.status(400).json({message: "Login failed: ", error: "Username contains forbidden characters: < > & \' \" or /"});
+  }
+
   password = validator.trim(password);
-  role = validator.escape(role);
+  if (!validateInput(password)) {
+    return res.status(400).json({message: "Login failed: ", error: "Password contains forbidden characters: < > & \' \" or /"});
+  }
+
   role = validator.trim(role);
+  if (!validateInput(role)) {
+    return res.status(400).json({message: "Login failed: ", error: "Userrole contains forbidden characters: < > & \' \" or /"});
+  }
 
   const user = {
     username,
@@ -152,10 +177,12 @@ exports.deleteUser = async (req, res, next) => {
   if (username === undefined) {
       return res.status(400).json({message: "No User specified"});
   }
-  
+
   // sanitize
-  username = validator.escape(username);
   username = validator.trim(username);
+  if (!validateInput(username)) {
+    return res.status(400).json({message: "User not deleted: ", error: "Username contains forbidden characters: < > & \' \" or /"});
+  }
 
   for (var i = 0; i < users.length; i++) {
     if (username === users[i].username) {
@@ -189,7 +216,7 @@ exports.getUsers = async (req, res, next) => {
 
   const currentUsers = [];
   for (var i = 0; i < users.length; i++) {
-    currentUsers[i] = {"username": users[i].username, "role": users[i].role};
+    currentUsers[i] = {"username": validator.unescape(users[i].username), "role": validator.unescape(users[i].role)};
   }
 
   res.status(200).json({
