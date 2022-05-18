@@ -16,7 +16,7 @@ exports.register = async (req, res, next) => {
   if (!bcrypt.compareSync(fileBuffer.toString(), hashedValue.toString())) {
     return res.status(401).json({message: "User Authentication compromissed"});
   }
-  
+
   let { username, password } = req.body;
   let role = req.body.role;
   if (!role) {
@@ -96,7 +96,7 @@ exports.login = async (req, res, next) => {
     }
 
     if (!foundUser) {
-      return res.status(401).json({message: "Login failed", error: "User not found."});
+      return res.status(401).json({message: "Login failed", error: "Wrong Username or Password"});
     }
     else {
       // jwt token

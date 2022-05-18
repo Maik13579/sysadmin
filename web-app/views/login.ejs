@@ -44,6 +44,7 @@
 						location.assign('/home');
 					}
 					else {
+            console.log(data.error);
 						return display.textContent = `${data.message}. ${data.error ? data.error : ''}`;
 					}
 				} catch (err) {

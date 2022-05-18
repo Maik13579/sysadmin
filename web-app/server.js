@@ -24,12 +24,22 @@ app.use(
   })
 );
 
-
 const server = https.createServer(options, app);
 
 app.use(express.json());
 app.use(cookieParser());
 app.use(csrfProtection);
+
+
+// error handler
+app.use(function (err, req, res, next) {
+  if (err.code !== 'EBADCSRFTOKEN') {
+    return next(err);
+  }
+
+  // handle CSRF token errors here
+  return res.status(403).json({message: "Request failed", error: "Request Origin not valid"});
+});
 
 app.use("/auth", require("./Auth/route"));
 
