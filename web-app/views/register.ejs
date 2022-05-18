@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="<%= csrfToken %>">
     <title>Register new User</title>
   </head>
   <body>
@@ -29,6 +30,8 @@
       const password = document.querySelector('#password');
       const role = document.querySelector('#role');
       const display = document.querySelector('.error');
+      const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
       form.addEventListener('submit', async (e) => {
          e.preventDefault();
          display.textContent = '';
@@ -36,7 +39,10 @@
           const res = await fetch('/auth/register', {
            method: 'POST',
             body: JSON.stringify({ username: username.value, password: password.value, role: role.value }),
-           headers: { 'Content-Type': 'application/json' }
+           headers: {
+             'Content-Type': 'application/json',
+             'CSRF-Token': token
+           }
           });
           const data = await res.json();
           if(res.status === 400 || res.status === 401) {

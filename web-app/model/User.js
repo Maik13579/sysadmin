@@ -6,6 +6,6 @@ const UserSchema = {
     role: {type: "string"}
   },
   required: ["username", "password"],
-}
+};
 
 module.exports = UserSchema;
