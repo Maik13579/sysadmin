@@ -21,8 +21,7 @@ exports.adminAuth = (req, res, next) => {
   }
   else {
     return res
-      .status(401)
-      .json({ message: "Not authorized, token not available" });
+      .status(401).redirect("/home");
   }
 };
 
@@ -46,7 +45,6 @@ exports.userAuth = (req, res, next) => {
   }
   else {
     return res
-      .status(401)
-      .json({ message: "Not authorized, token not available" });
+      .status(401).redirect("/");
   }
 };
