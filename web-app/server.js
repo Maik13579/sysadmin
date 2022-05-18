@@ -38,6 +38,7 @@ app.use(function (err, req, res, next) {
   }
 
   // handle CSRF token errors here
+  console.log("CSRF Not Valid: " + req.headers);
   return res.status(403).json({message: "Request failed", error: "Request Origin not valid"});
 });
 
