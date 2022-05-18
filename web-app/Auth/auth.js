@@ -6,6 +6,7 @@ const bcrypt = require('bcrypt');
 const fs = require('fs');
 const jwt = require("jsonwebtoken");
 const path = require("path");
+const validator = require('validator');
 
 const validate = ajv.compile(UserSchema);
 const jwtSecret = '5ab67fbe236d1025a9b52b6179a8db6dca16a4d0a4a843c86c09535feb0ddaddc82f8b';
@@ -19,6 +20,15 @@ exports.register = async (req, res, next) => {
 
   let { username, password } = req.body;
   let role = req.body.role;
+
+  // sanitize
+  username = validator.escape(username);
+  username = validator.trim(username);
+  password = validator.escape(password);
+  password = validator.trim(password);
+  role = validator.escape(role);
+  role = validator.trim(role);
+
   if (!role) {
     role = "Basic";
   }
@@ -74,7 +84,16 @@ exports.login = async (req, res, next) => {
   }
 
   let { username, password } = req.body;
-  const role = "";
+  let role = "";
+
+  // sanitize
+  username = validator.escape(username);
+  username = validator.trim(username);
+  password = validator.escape(password);
+  password = validator.trim(password);
+  role = validator.escape(role);
+  role = validator.trim(role);
+
   const user = {
     username,
     password,
@@ -129,10 +148,14 @@ exports.deleteUser = async (req, res, next) => {
     return res.status(401).json({message: "User Authentication compromissed"});
   }
 
-  const username = req.body.username;
+  let username = req.body.username;
   if (username === undefined) {
       return res.status(400).json({message: "No User specified"});
   }
+  
+  // sanitize
+  username = validator.escape(username);
+  username = validator.trim(username);
 
   for (var i = 0; i < users.length; i++) {
     if (username === users[i].username) {
