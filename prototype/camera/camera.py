@@ -51,8 +51,8 @@ class Camera():
         #Diffie Hellmann Key Exchange
         DHE = pyDHE.new()
 
-    #receive msg, decode it and convert it to int
-    master_public_key = int(master_sock.recv(10000).decode())
+        #receive msg, decode it and convert it to int
+        master_public_key = int(master_sock.recv(10000).decode())
         
         #convert to string, encode it and send  it to master
         master_sock.send(str(DHE.getPublicKey()).encode())
