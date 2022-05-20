@@ -9,6 +9,13 @@ from Crypto.Cipher import PKCS1_OAEP
 import threading
 import hashlib
 
+import pyDHE
+import base64
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.backends import default_backend
+
+
 from network import Connection
 
 PUBKEY = '''-----BEGIN PUBLIC KEY-----
@@ -40,16 +47,32 @@ class Server():
 
         self.master_pubkey = RSA.import_key(PUBKEY)
 
-        # generate symetric key
-        print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| generate key")
-        master_key = Fernet.generate_key()
+        #Diffie Hellmann Key Exchange
+        DHE = pyDHE.new()
 
-        # encrypt it with master publickey and send it to master
-        msg = self._RSA_encrypt(master_key, self.master_pubkey)
-        print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| send key")
-        master_sock.send(msg)
+        #receive msg, decode it and convert it to int
+        master_public_key = int(master_sock.recv(10000).decode())
 
-        self.secure_connection = Connection(master_sock, master_key)
+        #convert to string, encode it and send  it to master
+        master_sock.send(str(DHE.getPublicKey()).encode())
+
+        self.key = str(DHE.update(master_public_key))
+        print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| exchanged key")
+
+
+        #convert key to 32 bytes key, Base64url encoded
+        backend = default_backend()
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=b'',
+            iterations=100000,
+            backend=backend
+        )
+        self.key = base64.urlsafe_b64encode(kdf.derive(self.key.encode()))
+
+
+        self.secure_connection = Connection(master_sock, self.key)
         self.secure_connection.send("SERVER")
 
         print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| waiting for camera connection")

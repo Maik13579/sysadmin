@@ -10,6 +10,12 @@ from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 import hashlib
 
+import pyDHE
+import base64
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.backends import default_backend
+
 from network import Connection
 
 
@@ -111,11 +117,32 @@ class Master():
     def _handle_socket(self, conn, addr):
         print(conn.getsockname(), " -> ", conn.getpeername(),'| new connection')  
 
-        #first message has the encrypted key
-        msg = conn.recv(10000)
-        key = self._RSA_decrypt(msg)
+        #Diffie Hellmann Key Exchange
 
-        print(conn.getsockname(), " -> ", conn.getpeername(),"| received key")
+        masterDHE = pyDHE.new()
+
+        #convert to string, encode it and send it so peer
+        conn.send(str(masterDHE.getPublicKey()).encode())
+
+        # receive msg, decode it and convert it to int
+        peer_public_key = int(conn.recv(10000).decode())
+
+
+        key = str(masterDHE.update(peer_public_key))
+        print(conn.getsockname(), " -> ", conn.getpeername(),'| exchanged key')  
+
+        #convert key to 32 bytes key, Base64url encoded
+        backend = default_backend()
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=b'',
+            iterations=100000,
+            backend=backend
+        )
+        key = base64.urlsafe_b64encode(kdf.derive(key.encode()))
+        
+
         secure_connection = Connection(conn, key)
         msg = secure_connection.recv().decode()
 
