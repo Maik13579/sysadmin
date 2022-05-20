@@ -11,6 +11,8 @@ import hashlib
 
 from network import Connection
 
+PUBKEY = b'-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAycTnEETL6uU8iOBFLBv8\nuxx3NtDr6XBckJ5HnB4n3Y6XsXYXIbxbD/h0MmQ8eeWX/QVoixI1JFU+9aZWIInv\nvl9E1gGWjAxU6fPkN8dnZsws8EVAdqq9LDUcOtesxBLjPvZtsO4zXDHU1BYKcEc1\n4r37owo+ACwhY6HOrM0PbegUqiXO9O0SOTPC4bZ1++DQjMK6IJpcynQibl+3cvEE\nIqsFR9AVhm5/2EG59mgW32+MP4pWTTrzhyGQJnFa8vMmovc9pYtnAUlOdFa9gLKs\nS2km0kP1plVykV4h+GK1AD7gzYHPeQmKrM4E9R77gq7u91WrWHeGR2pOSktzc0kq\nYQIDAQAB\n-----END PUBLIC KEY-----'
+
 class Server():
 
     def __init__(self, name):
@@ -27,10 +29,7 @@ class Server():
             except:
                 pass
 
-        # get Master publickey
-        msg = master_sock.recv(100000).decode()
-        print(master_sock.getsockname()," -> ",master_sock.getpeername(),"| received public key")
-        self.master_pubkey = RSA.import_key(msg)
+        self.master_pubkey = RSA.import_key(PUBKEY)
 
         # generate symetric key
         print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| generate key")

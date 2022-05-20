@@ -12,6 +12,13 @@ import hashlib
 
 from network import Connection
 
+
+#TODO generate and share at setup
+PUBKEY = b'-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAx0tQNViIcbpWUEXneuTO\neUqMJGLCbqY4PeoACFtug+yjLjESik/Ry/82bKTMRZ8nCp0P3mxFYwP9a3MATTUv\nBCsaO2e6EkDL3wx/iPYxL3BPDSfipG6oYTvdSPKSsETOetn1R1TXNa6cm+JJUbyL\nwoe5GX55tiKy5wViPfCIas4aNWmRo1nt3mb5/uUW/lzXdSUsIDp3uneK/e4mJAdp\nc5yNZHM+RbrvrwGRVXIsgOZwbA6SdQMYW5cv5SbnfW4HVhX+8ryIxWfjYEg4S1A0\nZroPiNGm6QGt05LLRrWjyj2rCAJuzx+a5+9VatovvkDoLB62NOpA6H8Mo5iKzajA\nLQIDAQAB\n-----END PUBLIC KEY-----'
+
+PRIVATEKEY = b'-----BEGIN RSA PRIVATE KEY-----\nMIIEogIBAAKCAQEAx0tQNViIcbpWUEXneuTOeUqMJGLCbqY4PeoACFtug+yjLjES\nik/Ry/82bKTMRZ8nCp0P3mxFYwP9a3MATTUvBCsaO2e6EkDL3wx/iPYxL3BPDSfi\npG6oYTvdSPKSsETOetn1R1TXNa6cm+JJUbyLwoe5GX55tiKy5wViPfCIas4aNWmR\no1nt3mb5/uUW/lzXdSUsIDp3uneK/e4mJAdpc5yNZHM+RbrvrwGRVXIsgOZwbA6S\ndQMYW5cv5SbnfW4HVhX+8ryIxWfjYEg4S1A0ZroPiNGm6QGt05LLRrWjyj2rCAJu\nzx+a5+9VatovvkDoLB62NOpA6H8Mo5iKzajALQIDAQABAoIBAAMoV/XUQWOTQxDV\nfUOdkIZ49pQvuaveu4hZhEG8XFHcI0ieCL66Gb+de25ZKHzT/AeIBSB3KVT/cckh\nMs5OCTaL5OvTT9ICxqY5nhvWGcgzEuU+/FUjBSQvKxJDppg2NUYsdnHj9kVtv5Ks\nESBxZ3odb4KqanNWWSoYwi4o+PGg4SvCh6EoKmEsVzKf0n2RtMMs/tdUX7OQA4uO\nNfsZ7Z/9pAqtvEzGKUb8HScSaop3QKsctfdVtKgGjNuUo3bV435j/TmyXnR91ot6\n5TBgSx+WaoyA5vcUGFW6avBTdGR5y+9YLUgm7rWNXqL2JKAc0DDLsevrqG+MXIab\nOrt3cYUCgYEA1FwkiZYlf004tALmmdilCwq8A/0Olug4Eoomm5sYg8fCS66I0vcj\njRrotvBntwAgUXj8+6uaozudPx7oZAPPcDW0wU/iOAqfAozsTQMDPypz9BReI6Yj\nNwmFHjVlPgSsFcqGgxjbhahTDZ5G0njwyABkdt6gnIOgkPe5y+pN9qcCgYEA8D/O\negWLIcd9NrAIySdThZakGxvcNSycpZ3XMo+A95mhs5+QmBx9Gc/6wr/0KJTLdmHX\nKy8uzuSqmi+aRoqDrOvJYuRnqknf8hWFbgBeZgN+xMA3SkPrUgTj4qZ5VXfArgmD\n0EE5RPLJvuVsG608aApsVKyIh/sc47DSZOpzgQsCgYA70bzlGOt1Ia6QXqTQv4s2\nQg7WXMloTv/EkS/w806DiJi9suuN6doU3HijV7MPhLSV3qv8xMkppBhWeIFj8wLT\nC/3f2n3R5YQHNuU1iFy4xV+maLpf9mPDFCZwbQAY6T4EYWlksnLcAp9qnaQ7k5/X\n5uxl466AiD+Jto6a12SgzwKBgHFQtxOIj9IT5HQp3Ur7OIK2xZpfrqKJ8yyOYRTg\n6KRgGwu8xBdqwHqvRQgcP43weHLSvQkKTRqacfkdYLfK10Z1Q9xX/KkuBOmKyw9S\nLzQQi/dC7hEiLdjWo6GggXQVcpTjuf889EUX+p4GWdJICEjOOcBKTG9OupaOLP4a\nMvZ3AoGALx0iuU4n/78KTfxu56o+bqVyfD/cNJOrXmfXoETJJEsKwiL/96OXtofw\nf8brOuPjBdWd6x243FTfaFbTV9RumGO+lVFCchumsmYbSyp4W3t0HrR0o97LJbg7\nOmhNzYSFh6l1IT0bYpdljnsKoY6i+fkqG4NvkBln+EJqZCZvL+0=\n-----END RSA PRIVATE KEY-----'
+
+
 class Master():
 
     def __init__(self, ip, port):
@@ -21,10 +28,16 @@ class Master():
         self.cameras = {} #key = port, value = { "conn" : Connection, "online" : Boolean}
         self.servers = {} #key = id, value = { "conn" : Connection, "ports" : [ports]}
 
-        # RSA
-        print("generate public key")
-        self.secret = RSA.generate(2048)
-        self.public = self.secret.publickey()
+        # generate RSA
+        #print("generate public key")
+        #self.secret = RSA.generate(2048)
+        #self.public = self.secret.publickey()
+
+        #print(self.secret.export_key('PEM'))
+        #print(self.public.export_key('PEM'))
+
+        self.secret = RSA.import_key(PRIVATEKEY)
+        self.public = RSA.import_key(PUBKEY)
 
         # Create UDP socket
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -63,10 +76,6 @@ class Master():
 
     def _handle_socket(self, conn, addr):
         print(conn.getsockname(), " -> ", conn.getpeername(),'| new connection')  
-
-        #send public key
-        print(conn.getsockname(), " -> ", conn.getpeername(), "| send public key")
-        conn.send(self.public.exportKey("PEM"))
 
         #first message has the encrypted key
         msg = conn.recv(10000)
