@@ -56,7 +56,6 @@ OmhNzYSFh6l1IT0bYpdljnsKoY6i+fkqG4NvkBln+EJqZCZvL+0=
 class Master():
 
     def __init__(self, ip, port):
-        self.is_shutdown = False
         self.ip = ip
         self.port = port
         self.cameras = {} #key = port, value = { "conn" : Connection, "online" : Boolean}
@@ -66,7 +65,6 @@ class Master():
         #print("generate public key")
         #self.secret = RSA.generate(2048)
         #self.public = self.secret.publickey()
-
         #print(self.secret.export_key('PEM'))
         #print(self.public.export_key('PEM'))
 
@@ -89,7 +87,7 @@ class Master():
         
         # main loop
         ports = []
-        while not self.is_shutdown:
+        while True:
             for port in self.cameras.copy():
                 if port in ports:
                     continue
@@ -102,17 +100,13 @@ class Master():
                 
 
     def _accept_socket(self):
-        print("listening on ",self.ip,":",self.port)
-        while not self.is_shutdown:
+        while True:
             conn, addr = self.sock.accept()
             t = threading.Thread(target=self._handle_socket, args=(conn, addr, ))
             t.start()
 
     def _handle_socket(self, conn, addr):
-        print(conn.getsockname(), " -> ", conn.getpeername(),'| new connection')  
-
-
-        secure_connection = Connection(conn)
+        secure_connection = Connection(conn, True)
         msg = secure_connection.recv().decode()
 
         if msg == 'CAM': # its a camera
@@ -124,7 +118,6 @@ class Master():
             self.servers[id_] = {'conn':secure_connection, 'ports':[]}
             self._handle_server(id_, secure_connection)
         else:
-            print(conn.getsockname(), " -> ", conn.getpeername(),'| unknown type: ', msg)
             del secure_connection
 
     def _handle_camera(self, secure_connection):
@@ -132,47 +125,26 @@ class Master():
         while port in self.cameras: #if port is in use choose a new one
             port += 1
         self.cameras[port] = {'conn' : secure_connection.get_key().decode(), 'online' :  True }
-        print(secure_connection.getsockname(), " -> ", secure_connection.getpeername(),"| register camera on port: ",port)
         secure_connection.send(str(port))
 
-        # Create UDP socket
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        sock.settimeout(10)
-        sock.bind(("", port))
-        cam_connection = Connection(sock, None, self.cameras[port]['conn'])
-
-        while self.cameras[port]['online']:
-            # check if camera is streaming
-            try:
-                msg = cam_connection.recv()
-            except:
-                break
-
         del secure_connection
-        self.cameras.pop(port)
-        print(secure_connection.getsockname(), " -> ", secure_connection.getpeername(),"| Connection to camera closed")
+        #self.cameras.pop(port)
         return
 
     def _handle_server(self, id_, secure_connection):
         ports = []
-        online = True
 
-        while not self.is_shutdown and online:
+        while True:
             # check for new ports
             for port in self.servers[id_]['ports']:
                 if port not in ports:
                     #send port and key from camera to server
                     msg = str(port)+':'+self.cameras[port]['conn']
-                    print(secure_connection.getsockname(), " -> ", secure_connection.getpeername(), "| send port and camera-key")
                     secure_connection.send(msg)
 
                     #wait for ack msg
                     ack = secure_connection.recv().decode()
-                    print(secure_connection.getsockname(), " -> ", secure_connection.getpeername(), "| received ack")
                     if ack != msg+":START":
-                        print(secure_connection.getsockname(), " -> ", secure_connection.getpeername(), "| error in ack!")
                         continue
                     ports.append(port)
 
@@ -181,31 +153,26 @@ class Master():
                 if port not in self.servers[id_]['ports']:
                     #send port to server that he stop listen to it
                     msg = str(port)+':'+self.cameras[port]['conn']
-                    print(secure_connection.getsockname(), " -> ", secure_connection.getpeername(), "| send port and camera-key")
                     secure_connection.send(msg)
 
                     #wait for ack msg
                     ack = secure_connection.recv().decode()
-                    print(secure_connection.getsockname(), " -> ", secure_connection.getpeername(), "| received ack")
                     if ack != msg+":END":
-                        print(addr, "| error in ack!")
                         continue
                     ports.remove(port)
 
         self.servers.pop(id_)
         del secure_connection
 
-
-    def _RSA_decrypt(self, msg):
-        cipher = PKCS1_OAEP.new(self.secret)
-        return cipher.decrypt(msg)
+    #def _RSA_decrypt(self, msg):
+    #    cipher = PKCS1_OAEP.new(self.secret)
+    #    return cipher.decrypt(msg)
     
 if __name__ == '__main__':
     if len(sys.argv) > 2:
         ip = sys.argv[1]
         port = int(sys.argv[2])
     else:
-        print("python master.py [ip] [port]")
         exit(1)
     
     master = Master(ip, port)

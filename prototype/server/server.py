@@ -40,25 +40,20 @@ class Server():
 
         self.master_pubkey = RSA.import_key(PUBKEY)
 
-        self.secure_connection = Connection(master_sock, 1)
+        self.secure_connection = Connection(master_sock)
         self.key = self.secure_connection.get_key()
         self.secure_connection.send("SERVER")
-
-        print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| waiting for camera connection")
 
         while True:
             # get port and key from master
             msg = self.secure_connection.recv().decode()
             port, key = msg.split(':')
             port = int(port)
-            print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| received port and key")
             if port in self.connections:
                 #check if key is right
                 if key != self.connections[port].get_key():
-                    print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| wrong key: ", key)
                     continue
                 # send ack. port:key
-                print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| send ack")
                 msg+=":END"
                 self.secure_connection.send(msg)
                 self.connections.pop(port)
@@ -66,7 +61,6 @@ class Server():
 
             # send ack. port:key
             msg += ":START"
-            print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| send ack")
             self.secure_connection.send(msg)
 
             t = threading.Thread(target=self._handle_camera, args=(port, key, ))
@@ -79,29 +73,32 @@ class Server():
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         sock.bind(("", port))
-        secure_connection = Connection(sock,1,  key)
+        sock.settimeout(10)
+        secure_connection = Connection(sock, False,  key)
 
         # add connection to dictionaries
         self.connections[port] = secure_connection
-        print(sock.getsockname(), "| camera connected")
 
         last_frame = None
 
         while port in self.connections:
-            msg = secure_connection.recv()
+            try:
+                msg = secure_connection.recv()
+            except:
+                print('timeout on port: '+str(port))
+                del self.connections[port]
             frame = cv2.imdecode(pickle.loads(msg), cv2.IMREAD_COLOR)
-            frame, last_frame = self._detect_motion(frame, last_frame)
+            #frame, last_frame = self._detect_motion(frame, last_frame)
             cv2.imshow(self.name+"| Cam on port: "+str(port), frame)
             if cv2.waitKey(1):
                 pass
 
         del secure_connection
         cv2.destroyWindow(self.name+"| Cam on port: "+str(port))
-        print(sock.getsockname(), "| close connection")
 
-    def _RSA_encrypt(self, msg, key):
-        cipher = PKCS1_OAEP.new(key)
-        return cipher.encrypt(msg)
+    #def _RSA_encrypt(self, msg, key):
+    #    cipher = PKCS1_OAEP.new(key)
+    #    return cipher.encrypt(msg)
 
     def _detect_motion(self, frame, last_frame):
         #if it's the first image we can't detect changes
@@ -127,7 +124,6 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         name = sys.argv[1]
     else:
-        print("python server.py [name]")
         exit(1)
 
     server = Server(name)

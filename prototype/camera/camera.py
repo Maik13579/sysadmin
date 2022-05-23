@@ -25,9 +25,8 @@ class Camera():
     def __init__(self):
 
         # Video Capture
-        self.vcap = cv2.VideoCapture(0)
-        if not self.vcap.isOpened():
-            print('no camera found!')
+        vcap = cv2.VideoCapture(0)
+        if not vcap.isOpened():
             exit(1)
 
         # Connect to Master
@@ -40,44 +39,38 @@ class Camera():
             except:
                 pass
 
-        self.master_pubkey = RSA.import_key(PUBKEY)
+        master_pubkey = RSA.import_key(PUBKEY)
 
 
-        secure_connection = Connection(master_sock, 1)
-        self.key = secure_connection.get_key()
+        secure_connection = Connection(master_sock)
+        key = secure_connection.get_key()
+        fernet = Fernet(key)
         secure_connection.send("CAM")
 
         # get port to stream on
-        self.port = int(secure_connection.recv())
+        port = int(secure_connection.recv())
+        
+        del secure_connection
 
         # Create socket
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 10000000)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 10000000)
 
-
-        print("streaming on port ", self.port)
-    
         #get picture dump it, encrypt it and send it
         while True:
-            _, frame = self.vcap.read()
+            _, frame = vcap.read()
             ret, buffered = cv2.imencode(".jpg", frame,
                     [int(cv2.IMWRITE_JPEG_QUALITY),30])
             dumped = pickle.dumps(buffered)
-            self.sock.sendto(self._encrypt(dumped, self.key), ('<broadcast>', self.port))
+            sock.sendto(fernet.encrypt(dumped), ('<broadcast>', port))
         vcap.release()
 
 
     def _RSA_encrypt(self, msg, key):
         cipher = PKCS1_OAEP.new(key)
         return cipher.encrypt(msg)
-
-
-    def _encrypt(self, msg, key):
-        fernet = Fernet(key)
-        encrypted_msg = fernet.encrypt(msg)
-        return encrypted_msg
 
 
 
