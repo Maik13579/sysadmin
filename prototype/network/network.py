@@ -18,6 +18,7 @@ class Connection():
         self.isMaster = isMaster
         if not key: #use diffie hellmann to get a key
             self._diffie_hellmann()
+            print('new connection with '+str(self.getpeername()))
         else:
             self.key = key
             print('listening on port '+str(self.getsockname()[1]))
@@ -34,25 +35,8 @@ class Connection():
     def _diffie_hellmann(self):
         DHE = pyDHE.new()
 
-        #master receives first, peer sends first
-        if self.isMaster: #master
-            #receive msg, decode it and convert it to int
-            received_public_key = int(self.sock.recv(10000).decode())
-            #print(str(self.getsockname())+' <- '+str(self.getpeername()) +': received public key')
-
-            #convert to string, encode it and send  it to master
-            #print(str(self.getsockname())+' -> '+str(self.getpeername()) +': send public key')
-            self.sock.send(str(DHE.getPublicKey()).encode())
-        else: #peer
-            #convert to string, encode it and send  it to master
-            #print(str(self.getsockname())+' -> '+str(self.getpeername()) +': send public key')
-            self.sock.send(str(DHE.getPublicKey()).encode())
-
-            #receive msg, decode it and convert it to int
-            received_public_key = int(self.sock.recv(10000).decode())
-            #print(str(self.getsockname())+' <- '+str(self.getpeername()) +': received public key')
-
-
+        self.sock.send(str(DHE.getPublicKey()).encode())
+        received_public_key = int(self.sock.recv(10000).decode())
         key = str(DHE.update(received_public_key))
 
         #convert key to 32 bytes key, Base64url encoded
@@ -65,8 +49,6 @@ class Connection():
             backend=backend
         )
         self.key = base64.urlsafe_b64encode(kdf.derive(key.encode()))
-        print('new connection with '+str(self.getpeername()))
-
 
     def _decrypt(self, msg):
         try:
