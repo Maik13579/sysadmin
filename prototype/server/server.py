@@ -8,6 +8,8 @@ from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 import threading
 import hashlib
+import time
+import datetime
 
 from network import Connection
 
@@ -27,6 +29,10 @@ class Server():
     def __init__(self, name):
         self.name = name
         self.connections = {}
+        self.recording = False
+        self.filename = ""
+        self.timer = None
+        self.video = None
 
         # Connect to Master
         master_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -88,7 +94,10 @@ class Server():
                 print('timeout on port: '+str(port))
                 del self.connections[port]
             frame = cv2.imdecode(pickle.loads(msg), cv2.IMREAD_COLOR)
-            #frame, last_frame = self._detect_motion(frame, last_frame)
+            frame, last_frame = self._detect_motion(frame, last_frame)
+            if self.recording:
+                self.video.write(frame)
+            
             cv2.imshow(self.name+"| Cam on port: "+str(port), frame)
             if cv2.waitKey(1):
                 pass
@@ -117,8 +126,26 @@ class Server():
             if cv2.contourArea(contour) > 500:
                 x, y, w, h = cv2.boundingRect(contour)
                 cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                self.start_recording()
         return frame, last_frame
     
+    def start_recording(self):
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
+        
+        self.recording = True
+        if self.timer:
+            self.timer.cancel()
+        else:
+            self.filename = str(datetime.datetime.now()) + ".avi"
+            self.video = cv2.VideoWriter(self.filename, fourcc, 20, (640, 480))
+        self.timer = threading.Timer(5, self.stop_recording)
+        self.timer.start()
+
+    def stop_recording(self):
+        self.recording = False
+        self.filename = ""
+        self.timer = None
+        self.video = None
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
