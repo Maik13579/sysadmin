@@ -136,7 +136,8 @@ class Server():
         if self.timer:
             self.timer.cancel()
         else:
-            self.filename = str(datetime.datetime.now()) + ".avi"
+            filename = str(datetime.datetime.now()) + ".avi"
+            self.filename = filename.replace(" ", "_")
             self.video = cv2.VideoWriter(self.filename, fourcc, 20, (640, 480))
         self.timer = threading.Timer(5, self.stop_recording)
         self.timer.start()
