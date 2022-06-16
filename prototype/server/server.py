@@ -23,6 +23,7 @@ ZroPiNGm6QGt05LLRrWjyj2rCAJuzx+a5+9VatovvkDoLB62NOpA6H8Mo5iKzajA
 LQIDAQAB
 -----END PUBLIC KEY-----'''
 
+symmetric_key = "zCm3lRnleW3gwiIJfRJGLPTHCrLN08bnkttZG4Wly6c="
 
 class Server():
 
@@ -143,11 +144,25 @@ class Server():
         self.timer.start()
 
     def stop_recording(self):
+        filename = self.filename
+        t = threading.Thread(target=self.save_file_encrypted, args=(filename,))
+        t.start()
+
         self.recording = False
         self.filename = ""
         self.timer = None
         self.video = None
 
+    def save_file_encrypted(self, filename):
+        print("Encrypting" + filename)
+        f = Fernet(symmetric_key)
+        with open(filename, 'rb') as original:
+            video = original.read()
+        
+        encrypted = f.encrypt(video)
+        with open(filename, 'wb') as encrypted_file:
+            encrypted_file.write(encrypted)
+        
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         name = sys.argv[1]
