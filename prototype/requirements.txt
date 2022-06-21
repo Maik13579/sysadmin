@@ -4,3 +4,4 @@ opencv-python
 cryptography
 thread6
 pycryptodome
+pyDHE

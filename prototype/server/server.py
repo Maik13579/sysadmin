@@ -8,16 +8,32 @@ from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 import threading
 import hashlib
+import time
+import datetime
 
 from network import Connection
 
-PUBKEY = b'-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAycTnEETL6uU8iOBFLBv8\nuxx3NtDr6XBckJ5HnB4n3Y6XsXYXIbxbD/h0MmQ8eeWX/QVoixI1JFU+9aZWIInv\nvl9E1gGWjAxU6fPkN8dnZsws8EVAdqq9LDUcOtesxBLjPvZtsO4zXDHU1BYKcEc1\n4r37owo+ACwhY6HOrM0PbegUqiXO9O0SOTPC4bZ1++DQjMK6IJpcynQibl+3cvEE\nIqsFR9AVhm5/2EG59mgW32+MP4pWTTrzhyGQJnFa8vMmovc9pYtnAUlOdFa9gLKs\nS2km0kP1plVykV4h+GK1AD7gzYHPeQmKrM4E9R77gq7u91WrWHeGR2pOSktzc0kq\nYQIDAQAB\n-----END PUBLIC KEY-----'
+PUBKEY = '''-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAx0tQNViIcbpWUEXneuTO
+eUqMJGLCbqY4PeoACFtug+yjLjESik/Ry/82bKTMRZ8nCp0P3mxFYwP9a3MATTUv
+BCsaO2e6EkDL3wx/iPYxL3BPDSfipG6oYTvdSPKSsETOetn1R1TXNa6cm+JJUbyL
+woe5GX55tiKy5wViPfCIas4aNWmRo1nt3mb5/uUW/lzXdSUsIDp3uneK/e4mJAdp
+c5yNZHM+RbrvrwGRVXIsgOZwbA6SdQMYW5cv5SbnfW4HVhX+8ryIxWfjYEg4S1A0
+ZroPiNGm6QGt05LLRrWjyj2rCAJuzx+a5+9VatovvkDoLB62NOpA6H8Mo5iKzajA
+LQIDAQAB
+-----END PUBLIC KEY-----'''
+
+symmetric_key = "zCm3lRnleW3gwiIJfRJGLPTHCrLN08bnkttZG4Wly6c="
 
 class Server():
 
     def __init__(self, name):
         self.name = name
         self.connections = {}
+        self.recording = False
+        self.filename = ""
+        self.timer = None
+        self.video = None
 
         # Connect to Master
         master_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -31,33 +47,20 @@ class Server():
 
         self.master_pubkey = RSA.import_key(PUBKEY)
 
-        # generate symetric key
-        print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| generate key")
-        master_key = Fernet.generate_key()
-
-        # encrypt it with master publickey and send it to master
-        msg = self._RSA_encrypt(master_key, self.master_pubkey)
-        print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| send key")
-        master_sock.send(msg)
-
-        self.secure_connection = Connection(master_sock, master_key)
+        self.secure_connection = Connection(master_sock)
+        self.key = self.secure_connection.get_key()
         self.secure_connection.send("SERVER")
-
-        print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| waiting for camera connection")
 
         while True:
             # get port and key from master
             msg = self.secure_connection.recv().decode()
             port, key = msg.split(':')
             port = int(port)
-            print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| received port and key")
             if port in self.connections:
                 #check if key is right
                 if key != self.connections[port].get_key():
-                    print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| wrong key: ", key)
                     continue
                 # send ack. port:key
-                print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| send ack")
                 msg+=":END"
                 self.secure_connection.send(msg)
                 self.connections.pop(port)
@@ -65,7 +68,6 @@ class Server():
 
             # send ack. port:key
             msg += ":START"
-            print(master_sock.getsockname(), " -> ", master_sock.getpeername(),"| send ack")
             self.secure_connection.send(msg)
 
             t = threading.Thread(target=self._handle_camera, args=(port, key, ))
@@ -78,29 +80,35 @@ class Server():
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         sock.bind(("", port))
-        secure_connection = Connection(sock, key)
+        sock.settimeout(10)
+        secure_connection = Connection(sock, False,  key)
 
         # add connection to dictionaries
         self.connections[port] = secure_connection
-        print(sock.getsockname(), "| camera connected")
 
         last_frame = None
 
         while port in self.connections:
-            msg = secure_connection.recv()
+            try:
+                msg = secure_connection.recv()
+            except:
+                print('timeout on port: '+str(port))
+                del self.connections[port]
             frame = cv2.imdecode(pickle.loads(msg), cv2.IMREAD_COLOR)
             frame, last_frame = self._detect_motion(frame, last_frame)
+            if self.recording:
+                self.video.write(frame)
+            
             cv2.imshow(self.name+"| Cam on port: "+str(port), frame)
             if cv2.waitKey(1):
                 pass
 
         del secure_connection
         cv2.destroyWindow(self.name+"| Cam on port: "+str(port))
-        print(sock.getsockname(), "| close connection")
 
-    def _RSA_encrypt(self, msg, key):
-        cipher = PKCS1_OAEP.new(key)
-        return cipher.encrypt(msg)
+    #def _RSA_encrypt(self, msg, key):
+    #    cipher = PKCS1_OAEP.new(key)
+    #    return cipher.encrypt(msg)
 
     def _detect_motion(self, frame, last_frame):
         #if it's the first image we can't detect changes
@@ -119,14 +127,46 @@ class Server():
             if cv2.contourArea(contour) > 500:
                 x, y, w, h = cv2.boundingRect(contour)
                 cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                self.start_recording()
         return frame, last_frame
     
+    def start_recording(self):
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
+        
+        self.recording = True
+        if self.timer:
+            self.timer.cancel()
+        else:
+            filename = str(datetime.datetime.now()) + ".avi"
+            self.filename = filename.replace(" ", "_")
+            self.video = cv2.VideoWriter(self.filename, fourcc, 20, (640, 480))
+        self.timer = threading.Timer(5, self.stop_recording)
+        self.timer.start()
 
+    def stop_recording(self):
+        filename = self.filename
+        t = threading.Thread(target=self.save_file_encrypted, args=(filename,))
+        t.start()
+
+        self.recording = False
+        self.filename = ""
+        self.timer = None
+        self.video = None
+
+    def save_file_encrypted(self, filename):
+        print("Encrypting" + filename)
+        f = Fernet(symmetric_key)
+        with open(filename, 'rb') as original:
+            video = original.read()
+        
+        encrypted = f.encrypt(video)
+        with open(filename, 'wb') as encrypted_file:
+            encrypted_file.write(encrypted)
+        
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         name = sys.argv[1]
     else:
-        print("python server.py [name]")
         exit(1)
 
     server = Server(name)
