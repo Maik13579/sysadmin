@@ -23,9 +23,6 @@ HOST = '192.168.7.48'
 HOST_USER = 'iki'
 LOCAL_IMG_PATH = '/home/pi-cam/captured'
 REMOTE_IMG_PATH = '/home/iki/captured'
-PORT = 44444
-HOST_PORT = (HOST,PORT)
-BUFSIZE = 4096
 
 minimum_still_interval = 5
 motion_detected = False
