@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import os
 import signal
+import paramiko
 from paramiko import SSHClient
 from scp import SCPClient
 import numpy as np
@@ -19,6 +20,9 @@ signal.signal(signal.SIGTERM, signal_term_handler)
 
 
 HOST = '192.168.7.48'
+HOST_USER = 'iki'
+LOCAL_IMG_PATH = '/home/pi-cam/captured'
+REMOTE_IMG_PATH = '/home/iki/captured'
 PORT = 44444
 HOST_PORT = (HOST,PORT)
 BUFSIZE = 4096
@@ -71,16 +75,22 @@ with DetectMotion(camera) as output:
       # a raspberry pi is limited to a microSD for storage, so the
       # repetition of adding/deleting images will wear it out
 
-      filename = '/home/pi-cam/captured/img_' + \
+      filename = LOCAL_IMG_PATH+'/img_' + \
         datetime.datetime.now().strftime('%Y-%m-%dT%H.%M.%S.%f') + '.jpg'
       camera.capture(filename, format='jpeg', use_video_port=True)
       LOG.info('image captured to file: %s' % filename)
 
       ssh = SSHClient()
+      #key auth
       ssh.load_system_host_keys()
       ssh.connect(HOST)
+
+      #pass auth
+      #ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+      #ssh.connect(HOST, username=HOST_USER, password=PASSWORD')
+
       scp = SCPClient(ssh.get_transport())
-      scp.put(filename, remote_path='/home/pi-cam/captured')
+      scp.put(filename, remote_path=REMOTE_IMG_PATH)
       scp.close()
       LOG.info('copied image to %s' % HOST)
 
