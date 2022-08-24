@@ -8,6 +8,7 @@ import numpy as np
 import picamera
 import picamera.array
 import datetime
+import time
 import logging
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -25,8 +26,9 @@ LOCAL_IMG_PATH = '/home/pi-cam/captured'
 REMOTE_IMG_PATH = '/home/iki/captured'
 
 minimum_still_interval = 5
-motion_detected = False
 last_still_capture_time = datetime.datetime.now()
+motion_detected = False
+motion_detected_time = None
 
 # The 'analyse' method gets called on every frame processed while picamera
 # is recording h264 video.
@@ -46,6 +48,10 @@ class DetectMotion(picamera.array.PiMotionAnalysis):
       if (a > 60).sum() > 10:
         LOG.info('motion detected at: %s' % datetime.datetime.now().strftime('%Y-%m-%dT%H.%M.%S.%f'))
         motion_detected = True
+        motion_detected_time = time.time()
+      # toggle off motion_detection after 5 seconds without motion
+      if motion_detected and time.time() - motion_detected_time > 5:
+        motion_detected = False
 
 camera = picamera.PiCamera()
 with DetectMotion(camera) as output:
@@ -59,9 +65,7 @@ with DetectMotion(camera) as output:
         LOG.info('waiting for motion...')
         camera.wait_recording(1)
 
-      LOG.info('stop recording and capture an image...')
       camera.stop_recording()
-      motion_detected = False
 
       # replace the following code that saves the image to a file with:
       # 1. scp or somehow copy image to another computer,
@@ -72,10 +76,15 @@ with DetectMotion(camera) as output:
       # a raspberry pi is limited to a microSD for storage, so the
       # repetition of adding/deleting images will wear it out
 
-      filename = LOCAL_IMG_PATH+'/img_' + \
-        datetime.datetime.now().strftime('%Y-%m-%dT%H.%M.%S.%f') + '.jpg'
-      camera.capture(filename, format='jpeg', use_video_port=True)
-      LOG.info('image captured to file: %s' % filename)
+      filename = LOCAL_IMG_PATH+'/pi-cam_' + \
+        datetime.datetime.now().strftime('%Y-%m-%dT%H.%M.%S.%f') + '.h264'
+      camera.start_recording(filename, format='h264', motion_output=output)
+      while motion_detected:
+        LOG.info('recording')
+        camera_wait_recording(1)
+      
+      camera.stop_recording()
+      LOG.info('video captured to file: %s' % filename)
 
       ssh = SSHClient()
       #key auth
