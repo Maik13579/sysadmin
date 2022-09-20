@@ -15,8 +15,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
 )
-directory = "./videos/"
-ext = "*.avi"    
+directory = "./videos/storage/"
+ext = "*.avi"
 
 @app.get("/videos")
 def get_videos(filename = None):
