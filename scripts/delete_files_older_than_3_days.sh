@@ -1,1 +1,1 @@
-find /some/where/ -name '*.mp4' -type f -mtime +3 -delete
+find /some/where/ -name '*.mp4' -type f -mtime +72 -delete
