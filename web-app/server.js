@@ -43,6 +43,7 @@ app.use(function (err, req, res, next) {
 });
 
 app.use("/auth", require("./Auth/route"));
+app.use("/videoApi", require("./API/route"));
 
 app.get('/', (req,res) => {
     res.render('index');

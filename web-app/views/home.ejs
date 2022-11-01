@@ -20,17 +20,16 @@
 			<th>Filename</th>
 		</tr>
 	</table>
-	
+
 	<script>
 		const table = document.querySelector("table");
 
 		const getFilenames = async () => {
-			const res = await fetch('https://127.0.0.1:8000/videos', {
+			const res = await fetch('/videoApi/getVideoNames', {
 				method: 'GET',
 			});
 			const data = await res.json();
-			const filenames = JSON.parse(data);
-			filenames.forEach((filename, i) => {
+			data.forEach((filename, i) => {
 				let tr = `<tr> <td>${filename}</td> <td><button class="download">Download</button></td> </tr>`;
 				table.innerHTML += tr;
 
@@ -38,10 +37,10 @@
 				downloads.forEach((button, i) => {
 
 					button.addEventListener('click', async () => {
-						const res = await fetch("https://127.0.0.1:8000/videos?filename=" + filenames[i], {
+						const res = await fetch("https://127.0.0.1:8000/videos?filename=" + data[i], {
 							method: 'GET',
 						});
-						res.blob().then(blob => download(blob, filenames[i]));
+						res.blob().then(blob => download(blob, data[i]));
 
 						const download = (blob, filename) => {
 							const url = window.URL.createObjectURL(blob);
@@ -58,7 +57,7 @@
 				});
 			});
 		}
-	
+
 		function switchPage() {
 			location.assign('/admin');
 		}
