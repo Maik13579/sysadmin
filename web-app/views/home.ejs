@@ -37,7 +37,7 @@
 				downloads.forEach((button, i) => {
 
 					button.addEventListener('click', async () => {
-						const res = await fetch("https://127.0.0.1:8000/videos?filename=" + data[i], {
+						const res = await fetch("/videoApi/getVideo?videoName=" + data[i], {
 							method: 'GET',
 						});
 						res.blob().then(blob => download(blob, data[i]));

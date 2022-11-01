@@ -1,6 +1,6 @@
 const path = require("path");
 const validator = require('validator');
-var fernet = require('fernet');
+const {spawn} = require("child_process");
 var fs = require('fs');
 
 function validateInput(input) {
@@ -14,11 +14,8 @@ function validateInput(input) {
 
 symmetric_key = "zCm3lRnleW3gwiIJfRJGLPTHCrLN08bnkttZG4Wly6c=";
 
-var token = new fernet.Token({
-  secret: symmetric_key
-});
-
 directory = "../../videos/storage";
+tempDir = "../../videos/temp";
 archieveDir = "../../videos/archieve";
 
 exports.getVideoNames = async (req, res, next) => {
@@ -31,7 +28,7 @@ exports.getVideoNames = async (req, res, next) => {
 };
 
 exports.getVideo = async (req, res, next) => {
-  let videoName = req.body.videoName;
+  let videoName = req.query.videoName;
   if (videoName === undefined) {
       console.log("GetVideo Request: No Video specified");
       return res.status(400).json({message: "No Video specified"});
@@ -44,5 +41,28 @@ exports.getVideo = async (req, res, next) => {
     return res.status(400).json({message: "Request Denied: ", error: "Video name contains forbidden characters: < > & \' \" or /"});
   }
 
-  
+  const filePath = path.join(path.join(__dirname, directory), videoName);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ message: "Video not found"});
+  }
+
+  var dataToSend;
+  const python = spawn('python', ['API/decryptVideo.py', videoName]);
+  python.stdout.on('data', function(data) {
+    dataToSend = data.toString();
+  });
+
+  python.stderr.on('data', data => {
+    console.log(data.toString());
+  });
+
+  python.on('exit', (code) => {
+    if (code == 0) {
+      console.log("Decrypted file");
+      let tempFilePath = path.join(path.join(__dirname, tempDir), videoName);
+      res.status(200).download(tempFilePath, err => {
+        fs.unlink(tempFilePath, err => {});
+      });
+    }
+  });
 };
