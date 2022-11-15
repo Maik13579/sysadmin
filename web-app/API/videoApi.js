@@ -113,5 +113,66 @@ exports.getArchieveVideo = async (req, res, next) => {
         fs.unlink(tempFilePath, err => {});
       });
     }
+    else {
+      res.status(400).json({message: "Something went wrong while decrypting your Video"})
+    }
   });
+};
+
+exports.addToArchieve = async (req, res, next) => {
+  let videoName = req.query.videoName;
+  if (videoName === undefined) {
+      console.log("addToArchieve Request: No Video to archieve specified");
+      return res.status(400).json({message: "No Video to archieve specified"});
+  }
+
+  // sanitize
+  videoName = validator.trim(videoName);
+  if (!validateInput(videoName)) {
+    console.log("addToArchieve Request: Video to archieve contains forbidden characters.");
+    return res.status(400).json({message: "Request Denied: ", error: "Video to archieve name contains forbidden characters: < > & \' \" or /"});
+  }
+
+  const filePath = path.join(path.join(__dirname, directory), videoName);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ message: "Video to archieve not found"});
+  }
+
+  let targetPath = path.join(path.join(__dirname, archieveDir), videoName);
+  fs.rename(filePath, targetPath, function (err) {
+    if (err) {
+        return res.status(400).json({message: "Request Denied: ", error: err});
+    }
+  });
+
+  res.status(200).json({message: "Added Video to Archieve"});
+};
+
+exports.removeFromArchieve = async (req, res, next) => {
+  let videoName = req.query.videoName;
+  if (videoName === undefined) {
+      console.log("removeFromArchieve Request: No Archieve Video specified");
+      return res.status(400).json({message: "No Archieve Video specified"});
+  }
+
+  // sanitize
+  videoName = validator.trim(videoName);
+  if (!validateInput(videoName)) {
+    console.log("removeFromArchieve Request: Archieve Video contains forbidden characters.");
+    return res.status(400).json({message: "Request Denied: ", error: "Archieve Video name contains forbidden characters: < > & \' \" or /"});
+  }
+
+  const filePath = path.join(path.join(__dirname, archieveDir), videoName);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ message: "Archieve Video not found"});
+  }
+
+  fs.unlink(filePath, err => {
+    if (err) {
+        return res.status(400).json({message: "Request Denied: ", error: err});
+    }
+    else {
+      res.status(200).json({message: "Added Video to Archieve"});
+    }
+  });  
 };
