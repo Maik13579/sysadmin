@@ -66,3 +66,52 @@ exports.getVideo = async (req, res, next) => {
     }
   });
 };
+
+exports.getArchieveNames = async (req, res, next) => {
+  var files = fs.readdirSync(path.join(__dirname, archieveDir));
+  if (files.length == 0) {
+    return res.status(200).json({ message: "No files found" });
+  }
+
+  res.status(200).json(files);
+};
+
+exports.getArchieveVideo = async (req, res, next) => {
+  let videoName = req.query.videoName;
+  if (videoName === undefined) {
+      console.log("getArchieveVideo Request: No Archieve Video specified");
+      return res.status(400).json({message: "No Archieve Video specified"});
+  }
+
+  // sanitize
+  videoName = validator.trim(videoName);
+  if (!validateInput(videoName)) {
+    console.log("getArchieveVideo Request: Archieve Video contains forbidden characters.");
+    return res.status(400).json({message: "Request Denied: ", error: "Archieve Video name contains forbidden characters: < > & \' \" or /"});
+  }
+
+  const filePath = path.join(path.join(__dirname, archieveDir), videoName);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ message: "Archieve Video not found"});
+  }
+
+  var dataToSend;
+  const python = spawn('python', ['API/decryptVideo.py', videoName]);
+  python.stdout.on('data', function(data) {
+    dataToSend = data.toString();
+  });
+
+  python.stderr.on('data', data => {
+    console.log(data.toString());
+  });
+
+  python.on('exit', (code) => {
+    if (code == 0) {
+      console.log("Decrypted file");
+      let tempFilePath = path.join(path.join(__dirname, tempDir), videoName);
+      res.status(200).download(tempFilePath, err => {
+        fs.unlink(tempFilePath, err => {});
+      });
+    }
+  });
+};
