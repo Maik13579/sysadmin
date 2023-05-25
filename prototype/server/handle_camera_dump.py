@@ -3,6 +3,7 @@ import glob
 import io
 import sys
 from cryptography.fernet import Fernet
+import moviepy.editor as moviepy
 
 symmetric_key = "zCm3lRnleW3gwiIJfRJGLPTHCrLN08bnkttZG4Wly6c="
 directory = r"C:\Users\janni\github\sysadmin\videos\camera_dump"
@@ -15,7 +16,14 @@ class DumpHandler:
     def read_files(self):
         for root, dirs, files in os.walk(directory):
             for file in files:
-                self.save_file_encrypted(file)
+                newFilename = file[:-4] + ".mp4"
+                self.convert_to_mp4(file, newFilename)
+                os.remove(os.path.join(directory, file))
+                self.save_file_encrypted(newFilename)
+
+    def convert_to_mp4(self, filename, newFilename):
+        clip = moviepy.VideoFileClip(os.path.join(directory, filename))
+        clip.write_videofile(os.path.join(directory, newFilename))
 
     def save_file_encrypted(self, filename):
         print("Encrypting " + filename)
