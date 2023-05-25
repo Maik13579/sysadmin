@@ -65,6 +65,10 @@ app.get('/home', userAuth, (req,res) => {
     res.render('home', { csrfToken: req.csrfToken() });
 });
 
+app.get('/mediaPlayer', userAuth, (req,res) => {
+    res.render('mediaPlayer', { csrfToken: req.csrfToken() });
+});
+
 app.get('/logout', (req,res) => {
     res.cookie("jwt", "", { maxAge: "1" });
     res.redirect("/");

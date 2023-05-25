@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang = "en">
+<head>
+	<meta charset = "UTF-8">
+	<title> Media Player </title>
+	<style>
+		#mylink{
+			font-size: 25px;
+		}
+	</style>
+</head>
+<body align='center'>
+  <header>
+		<h1>Media Player</h1>
+		<button type="button" name="logout"><a href="/logout">Log Out</a></button>
+	</header>
+	<button type="button" id="backHome" onclick="switchPage()">Home</button>
+
+	<p>
+	</p>
+
+	<script>
+		const params = new URL(window.location.toLocaleString()).searchParams;
+		const filename = params.get("videoName");
+		const paragraph = document.querySelector("p");
+		paragraph.innerHTML += `<video width="400" controls>
+		<source src="/videoApi/getVideo?videoName=${filename}" type="video/mp4">
+		</video>`;
+
+    function switchPage() {
+      location.assign('/home');
+    }
+</script>
+</body>
+</html>

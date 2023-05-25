@@ -3,6 +3,8 @@ const validator = require('validator');
 const {spawn} = require("child_process");
 var fs = require('fs');
 
+let timerDicc = new Object();
+
 function validateInput(input) {
   if(validator.contains(input, '>') || validator.contains(input, '<') ||
   validator.contains(input, '&') || validator.contains(input, '\'') || validator.contains(input, '\"') || validator.contains(input, '/')) {
@@ -41,6 +43,12 @@ exports.getVideo = async (req, res, next) => {
     return res.status(400).json({message: "Request Denied: ", error: "Video name contains forbidden characters: < > & \' \" or /"});
   }
 
+  const decryptedFilePath = path.join(path.join(__dirname, tempDir), videoName);
+  if (fs.existsSync(decryptedFilePath)) {
+    streamVideo(req, res, videoName);
+    return;
+  }
+
   const filePath = path.join(path.join(__dirname, directory), videoName);
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ message: "Video not found"});
@@ -59,13 +67,44 @@ exports.getVideo = async (req, res, next) => {
   python.on('exit', (code) => {
     if (code == 0) {
       console.log("Decrypted file");
-      let tempFilePath = path.join(path.join(__dirname, tempDir), videoName);
-      res.status(200).download(tempFilePath, err => {
-        fs.unlink(tempFilePath, err => {});
-      });
+      streamVideo(req, res, videoName);
     }
   });
 };
+
+function streamVideo(req, res, videoName) {
+  const range = req.headers.range;
+  if (!range) {
+      res.status(400).send("Requires Range header");
+  }
+
+  let tempFilePath = path.join(path.join(__dirname, tempDir), videoName);
+  const videoSize = fs.statSync(tempFilePath).size;
+  const CHUNK_SIZE = 10 ** 6;
+  const start = Number(range.replace(/\D/g, ""));
+  const end = Math.min(start + CHUNK_SIZE, videoSize - 1);
+  const contentLength = end - start + 1;
+  const headers = {
+      "Content-Range": `bytes ${start}-${end}/${videoSize}`,
+      "Accept-Ranges": "bytes",
+      "Content-Length": contentLength,
+      "Content-Type": "video/mp4",
+  };
+  res.writeHead(206, headers);
+  const videoStream = fs.createReadStream(tempFilePath, { start, end });
+  videoStream.pipe(res);
+
+  if (videoName in timerDicc) {
+    clearTimeout(timerDicc[videoName]);
+    delete timerDicc[videoName];
+  }
+
+  timerDicc[videoName] = setTimeout(deleteTemp, 30000, tempFilePath);
+}
+
+function deleteTemp(tempFilePath) {
+  fs.unlink(tempFilePath, err => {});
+}
 
 exports.getArchieveNames = async (req, res, next) => {
   var files = fs.readdirSync(path.join(__dirname, archieveDir));
@@ -174,5 +213,5 @@ exports.removeFromArchieve = async (req, res, next) => {
     else {
       res.status(200).json({message: "Added Video to Archieve"});
     }
-  });  
+  });
 };

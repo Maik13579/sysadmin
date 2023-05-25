@@ -30,36 +30,25 @@
 			});
 			const data = await res.json();
 			data.forEach((filename, i) => {
-				let tr = `<tr> <td>${filename}</td> <td><button class="download">Download</button></td> </tr>`;
+				let tr = `<tr> <td>${filename}</td> <td><button class="open"">Open Video</button></td> </tr>`;
 				table.innerHTML += tr;
 
-				const downloads = document.querySelectorAll(".download");
+				const downloads = document.querySelectorAll(".open");
 				downloads.forEach((button, i) => {
-
 					button.addEventListener('click', async () => {
-						const res = await fetch("/videoApi/getVideo?videoName=" + data[i], {
-							method: 'GET',
+							openPlayer(data[i]);
 						});
-						res.blob().then(blob => download(blob, data[i]));
-
-						const download = (blob, filename) => {
-							const url = window.URL.createObjectURL(blob);
-							const a = document.createElement('a');
-							a.style.display = 'none';
-							a.href = url;
-							a.download = filename;
-							document.body.appendChild(a);
-							a.click();
-							document.body.removeChild(a);
-							window.URL.revokeObjectURL(url);
-						}
 					});
 				});
-			});
-		}
+			};
+
 
 		function switchPage() {
 			location.assign('/admin');
+		}
+
+		function openPlayer(videoName) {
+			location.assign('/mediaPlayer?videoName=' + videoName);
 		}
 
 		const adminButton = document.querySelector('#user-management');
