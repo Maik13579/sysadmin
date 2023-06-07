@@ -36,7 +36,7 @@
 				const downloads = document.querySelectorAll(".open");
 				downloads.forEach((button, i) => {
 					button.addEventListener('click', async () => {
-							openPlayer(data[i]);
+							openPlayer(data[i], false);
 						});
 					});
 				});
@@ -47,8 +47,8 @@
 			location.assign('/admin');
 		}
 
-		function openPlayer(videoName) {
-			location.assign('/mediaPlayer?videoName=' + videoName);
+		function openPlayer(videoName, isArchieved) {
+			location.assign('/mediaPlayer?videoName=' + videoName + '&archieved=' + isArchieved);
 		}
 
 		const adminButton = document.querySelector('#user-management');
