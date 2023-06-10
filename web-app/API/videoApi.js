@@ -238,7 +238,8 @@ exports.removeFromArchieve = async (req, res, next) => {
     return res.status(404).json({ message: "Archieve Video not found"});
   }
 
-  fs.unlink(filePath, err => {
+  let targetPath = path.join(path.join(__dirname, directory), videoName);
+  fs.rename(filePath, targetPath, function (err) {
     if (err) {
         return res.status(400).json({message: "Request Denied: ", error: err});
     }

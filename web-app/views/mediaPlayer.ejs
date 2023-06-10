@@ -16,8 +16,10 @@
 		<button type="button" name="logout"><a href="/logout">Log Out</a></button>
 	</header>
 	<button type="button" id="backHome" onclick="switchPage()">Home</button>
+	
+	<br/><br/>
 
-	<button type="button" id="addToArchieve" onclick="switchPage()">Add to Archieve</button>
+	<button type="button" id="add-to-archieve" onclick="toggleArchieve()">Add to Archieve</button>
 	<p id="video-player">
 	</p>
 
@@ -25,8 +27,10 @@
 		const params = new URL(window.location.toLocaleString()).searchParams;
 		const filename = params.get("videoName");
 		const paragraph = document.querySelector('#video-player');
-		const isArchieved = params.get("archieved");
+		let isArchieved = params.get("archieved");
 		const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+		const archieveBtn = document.querySelector('#add-to-archieve');
+
 		paragraph.innerHTML += `<video width="400" controls>
 		<source src="/videoApi/getVideo?videoName=${filename}&archieved=${isArchieved}" type="video/mp4">
 		</video>`;
@@ -41,10 +45,43 @@
 			});
 		};
 
+		const addToArchieve = async () => {
+			const res = await fetch('/videoApi/addToArchieve?videoName=' + filename, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'CSRF-Token': token
+				}
+			});
+		};
+
+		const removeFromArchieve = async () => {
+			const res = await fetch('/videoApi/removeFromArchieve?videoName=' + filename, {
+				method: 'DELETE',
+				headers: {
+					'Content-Type': 'application/json',
+					'CSRF-Token': token
+				}
+			});
+		};
+
     function switchPage() {
 			deleteVideoStream();
 			location.assign('/home');
     }
+
+		function toggleArchieve() {
+			if (isArchieved == true) {
+				removeFromArchieve();
+				isArchieved = false;
+				archieveBtn.textContent = 'Add to Archieve';
+			}
+			else {
+				addToArchieve();
+				isArchieved = true;
+				archieveBtn.textContent = 'Delete from Archieve';
+			}
+		}
 </script>
 </body>
 </html>
