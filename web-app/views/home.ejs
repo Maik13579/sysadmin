@@ -15,6 +15,9 @@
 		<button type="button" name="logout"><a href="/logout">Log Out</a></button>
 	</header>
 	<button type="button" id="user-management" onclick="switchPage()">User Management</button>
+	<br/><br/>
+	<button type="button" id="toggle-archieve" onclick="toggleArchieve()">Show Archieve</button>
+
 	<table>
 		<tr>
 			<th>Filename</th>
@@ -23,43 +26,60 @@
 
 	<script>
 		const table = document.querySelector("table");
+		let showArchieve = false;
+		const archieveBtn = document.querySelector('#toggle-archieve');
 
 		const getFilenames = async () => {
-			const res = await fetch('/videoApi/getVideoNames', {
+			let api = '/videoApi/getVideoNames';
+			if (showArchieve == true) {
+					api = '/videoApi/getArchieveNames';
+			}
+
+			const res = await fetch(api, {
 				method: 'GET',
 			});
 			const data = await res.json();
-			data.forEach((filename, i) => {
-				let tr = `<tr> <td>${filename}</td> <td><button class="download">Download</button></td> </tr>`;
+			if (res.status == 404) {
+				let tr = `<tr> <td>No Files Found</td> </tr>`;
 				table.innerHTML += tr;
+			}
+			else {
+				data.forEach((filename, i) => {
+					let tr = `<tr> <td>${filename}</td> <td><button class="open"">Open Video</button></td> </tr>`;
+					table.innerHTML += tr;
 
-				const downloads = document.querySelectorAll(".download");
-				downloads.forEach((button, i) => {
-
-					button.addEventListener('click', async () => {
-						const res = await fetch("/videoApi/getVideo?videoName=" + data[i], {
-							method: 'GET',
+					const downloads = document.querySelectorAll(".open");
+					downloads.forEach((button, i) => {
+						button.addEventListener('click', async () => {
+							openPlayer(data[i], showArchieve);
 						});
-						res.blob().then(blob => download(blob, data[i]));
-
-						const download = (blob, filename) => {
-							const url = window.URL.createObjectURL(blob);
-							const a = document.createElement('a');
-							a.style.display = 'none';
-							a.href = url;
-							a.download = filename;
-							document.body.appendChild(a);
-							a.click();
-							document.body.removeChild(a);
-							window.URL.revokeObjectURL(url);
-						}
 					});
 				});
-			});
-		}
+			}
+		};
+
 
 		function switchPage() {
 			location.assign('/admin');
+		}
+
+		function openPlayer(videoName, isArchieved) {
+			location.assign('/mediaPlayer?videoName=' + videoName + '&archieved=' + isArchieved);
+		}
+
+		function toggleArchieve() {
+			if (showArchieve == true) {
+				showArchieve = false;
+				archieveBtn.textContent = 'Show Archieve';
+				table.innerHTML = '';
+			}
+			else {
+				showArchieve = true;
+				archieveBtn.textContent = 'Show new Videos';
+				table.innerHTML = '';
+			}
+
+			getFilenames();
 		}
 
 		const adminButton = document.querySelector('#user-management');
