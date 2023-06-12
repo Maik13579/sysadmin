@@ -23,7 +23,7 @@ archieveDir = "../../videos/archieve";
 exports.getVideoNames = async (req, res, next) => {
   var files = fs.readdirSync(path.join(__dirname, directory));
   if (files.length == 0) {
-    return res.status(200).json({ message: "No files found" });
+    return res.status(404).json({ message: "No files found" });
   }
 
   res.status(200).json(files);
@@ -141,7 +141,7 @@ function deleteTemp(tempFilePath) {
 exports.getArchieveNames = async (req, res, next) => {
   var files = fs.readdirSync(path.join(__dirname, archieveDir));
   if (files.length == 0) {
-    return res.status(200).json({ message: "No files found" });
+    return res.status(404).json({ message: "No files found" });
   }
 
   res.status(200).json(files);

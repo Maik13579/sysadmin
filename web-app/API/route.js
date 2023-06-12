@@ -8,7 +8,7 @@ router.route("/getVideo").get(userAuth, getVideo);
 router.route("/getArchieveNames").get(userAuth, getArchieveNames);
 router.route("/getArchieveVideo").get(userAuth, getArchieveVideo);
 router.route("/addToArchieve").post(userAuth, addToArchieve);
-router.route("/removeFromArchieve").delete(userAuth, removeFromArchieve);
+router.route("/removeFromArchieve").post(userAuth, removeFromArchieve);
 router.route("/deleteVideoStream").delete(userAuth, deleteVideoStream);
 
 module.exports = router;
