@@ -1,2 +1,2 @@
 #!/bin/sh
-python /path/to/script.py
+python /home/pi/Documents/sysadmin/web-app/API/handle_camera_dump.py
