@@ -4,6 +4,7 @@ import signal
 import paramiko
 from paramiko import SSHClient
 from scp import SCPClient
+from io import BytesIO
 import numpy as np
 import picamera
 import picamera.array
@@ -22,7 +23,6 @@ signal.signal(signal.SIGTERM, signal_term_handler)
 HOST = '192.168.0.97'
 HOST_USER = 'pi'
 PASSWORD = 'baum'
-LOCAL_IMG_PATH = '/home/pi-cam1/captured'
 REMOTE_IMG_PATH = '/home/pi/Documents/sysadmin/videos/camera_dump'
 
 minimum_still_interval = 5
@@ -52,15 +52,15 @@ camera = picamera.PiCamera()
 with DetectMotion(camera) as output:
   try:
     camera.resolution = (640, 480)
-    camera.framerate= 10
+    camera.framerate= 15
     # record video to nowhere, as we are just trying to capture images:
     camera.start_recording('/dev/null', format='h264', motion_output=output)
     while True:
       while not motion_detected:
         LOG.info('waiting for motion...')
-        camera.wait_recording(1)
+        camera.wait_recording(2)
 
-      LOG.info('stop recording and capture an image...')
+      LOG.info('stop recording and capture a video...')
       camera.stop_recording()
       motion_detected = False
 
@@ -73,10 +73,16 @@ with DetectMotion(camera) as output:
       # a raspberry pi is limited to a microSD for storage, so the
       # repetition of adding/deleting images will wear it out
 
-      filename = LOCAL_IMG_PATH+'/img_' + \
-        datetime.datetime.now().strftime('%Y-%m-%dT%H.%M.%S.%f') + '.jpg'
-      camera.capture(filename, format='jpeg', use_video_port=True)
-      LOG.info('image captured to file: %s' % filename)
+      filename = '/vid_' + \
+        datetime.datetime.now().strftime('%Y-%m-%dT%H.%M.%S.%f') + '.h264'
+      stream = BytesIO()
+      camera.start_recording(stream, format='h264', quality=23)
+      LOG.info('capturing video: %s' % filename)
+
+      camera.wait_recording(10)
+      camera.stop_recording()
+
+      stream.seek(0)
 
       ssh = SSHClient()
       #key auth
@@ -88,12 +94,10 @@ with DetectMotion(camera) as output:
       ssh.connect(HOST, username=HOST_USER, password=PASSWORD)
 
       scp = SCPClient(ssh.get_transport())
-      scp.put(filename, remote_path=REMOTE_IMG_PATH)
+      scp.putfo(stream, remote_path=REMOTE_IMG_PATH + filename)
       scp.close()
-      LOG.info('copied image to %s' % HOST)
-
-      os.remove(filename)
-      LOG.info('deleted image')
+      LOG.info('video transfer to %s successful' % HOST)
+      stream.close()
 
       # record video to nowhere, as we are just trying to capture images:
       camera.start_recording('/dev/null', format='h264', motion_output=output)
@@ -104,4 +108,3 @@ with DetectMotion(camera) as output:
     camera.close()
     LOG.info("\ncamera turned off!")
     LOG.info("detect motion has ended.\n")
-
