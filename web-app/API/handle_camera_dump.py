@@ -17,11 +17,12 @@ class DumpHandler:
         for root, dirs, files in os.walk(directory):
             for file in files:
                 newFilename = file[:-4] + ".mp4"
-                self.convert_to_mp4(file, newFilename)
-                os.remove(os.path.join(directory, file))
+                #self.convert_to_mp4(file, newFilename)
+                #os.remove(os.path.join(directory, file))
                 self.save_file_encrypted(newFilename)
 
     def convert_to_mp4(self, filename, newFilename):
+        #TODO: use MP4Box for converting
         clip = moviepy.VideoFileClip(os.path.join(directory, filename))
         clip.write_videofile(os.path.join(directory, newFilename))
 
@@ -36,6 +37,6 @@ class DumpHandler:
         with open(os.path.join(storageDirectory, filename), 'wb') as encrypted_file:
             encrypted_file.write(encrypted)
 
-        os.remove(ogFile)
+        #os.remove(ogFile)
 
 dumpHanlder = DumpHandler()

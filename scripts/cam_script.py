@@ -10,6 +10,7 @@ import picamera
 import picamera.array
 import datetime
 import logging
+import time
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 LOG = logging.getLogger("capture_motion")
@@ -23,10 +24,13 @@ signal.signal(signal.SIGTERM, signal_term_handler)
 HOST = '192.168.0.97'
 HOST_USER = 'pi'
 PASSWORD = 'baum'
+LOCAL_IMG_PATH = '/home/pi-cam1/captured'
 REMOTE_IMG_PATH = '/home/pi/Documents/sysadmin/videos/camera_dump'
 
-minimum_still_interval = 5
+minimum_still_interval = 3
+clip_time = 10
 motion_detected = False
+recording = False
 last_still_capture_time = datetime.datetime.now()
 
 # The 'analyse' method gets called on every frame processed while picamera
@@ -35,7 +39,9 @@ last_still_capture_time = datetime.datetime.now()
 class DetectMotion(picamera.array.PiMotionAnalysis):
   def analyse(self, a):
     global minimum_still_interval, motion_detected, last_still_capture_time
-    if datetime.datetime.now() > last_still_capture_time + \
+    if recording:
+        pass
+    elif datetime.datetime.now() > last_still_capture_time + \
         datetime.timedelta(seconds=minimum_still_interval):
       a = np.sqrt(
         np.square(a['x'].astype(np.float64)) +
@@ -48,21 +54,26 @@ class DetectMotion(picamera.array.PiMotionAnalysis):
         LOG.info('motion detected at: %s' % datetime.datetime.now().strftime('%Y-%m-%dT%H.%M.%S.%f'))
         motion_detected = True
 
-camera = picamera.PiCamera()
+def anotate_time(dt):
+    start = datetime.datetime.now()
+    while (datetime.datetime.now() - start).seconds < dt:
+        camera.annotate_text = datetime.datetime.now().strftime('%d.%m.%Y - %H:%M.%S')
+        camera.wait_recording(0.1)
+
+camera = picamera.PiCamera(resolution = (640, 480), framerate = 24)
+stream = picamera.PiCameraCircularIO(camera, seconds=clip_time)
 with DetectMotion(camera) as output:
   try:
-    camera.resolution = (640, 480)
-    camera.framerate= 15
     # record video to nowhere, as we are just trying to capture images:
-    camera.start_recording('/dev/null', format='h264', motion_output=output)
+    camera.start_recording(stream, format='h264', motion_output=output)
     while True:
       while not motion_detected:
         LOG.info('waiting for motion...')
-        camera.wait_recording(2)
+        anotate_time(1)
 
-      LOG.info('stop recording and capture a video...')
-      camera.stop_recording()
+      LOG.info('motion detected. Start recording video...')
       motion_detected = False
+      recording = True
 
       # replace the following code that saves the image to a file with:
       # 1. scp or somehow copy image to another computer,
@@ -74,15 +85,14 @@ with DetectMotion(camera) as output:
       # repetition of adding/deleting images will wear it out
 
       filename = '/vid_' + \
-        datetime.datetime.now().strftime('%Y-%m-%dT%H.%M.%S.%f') + '.h264'
-      stream = BytesIO()
-      camera.start_recording(stream, format='h264', quality=23)
+        datetime.datetime.now().strftime('%Y-%m-%dT%H.%M.%S') + '.h264'
       LOG.info('capturing video: %s' % filename)
 
-      camera.wait_recording(10)
-      camera.stop_recording()
+      videoIO = BytesIO()
+      anotate_time(clip_time / 2)
+      stream.copy_to(videoIO, seconds=clip_time)
 
-      stream.seek(0)
+      videoIO.seek(0)
 
       ssh = SSHClient()
       #key auth
@@ -94,17 +104,20 @@ with DetectMotion(camera) as output:
       ssh.connect(HOST, username=HOST_USER, password=PASSWORD)
 
       scp = SCPClient(ssh.get_transport())
-      scp.putfo(stream, remote_path=REMOTE_IMG_PATH + filename)
+      scp.putfo(videoIO, remote_path=REMOTE_IMG_PATH + filename)
       scp.close()
       LOG.info('video transfer to %s successful' % HOST)
-      stream.close()
+      videoIO.close()
+      recording = False
+      motion_detected = False
 
-      # record video to nowhere, as we are just trying to capture images:
-      camera.start_recording('/dev/null', format='h264', motion_output=output)
   except KeyboardInterrupt as e:
     LOG.info("\nreceived KeyboardInterrupt via Ctrl-C")
     pass
   finally:
+    camera.stop_recording();
+    stream.clear()
+    stream.close()
     camera.close()
     LOG.info("\ncamera turned off!")
     LOG.info("detect motion has ended.\n")
